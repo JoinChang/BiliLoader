@@ -1,0 +1,20 @@
+{
+    "name": "bili-loader",
+    "version": "0.0.0",
+    "description": "哔哩哔哩 PC 客户端插件加载器",
+    "main": "src/entry.js",
+    "author": {
+        "name": "Lxns",
+        "email": "i@lxns.net"
+    },
+    "license": "MIT",
+    "homepage": "https://github.com/JoinChang/BiliLoader",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/JoinChang/BiliLoader.git"
+    },
+    "dependencies": {
+        "electron": "^33.0.2",
+        "electron-log": "^4.4.8"
+    }
+}

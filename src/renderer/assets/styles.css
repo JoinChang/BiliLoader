@@ -1,0 +1,13 @@
+@layer {
+    .app_settings .header_tab .vui_tabs--nav-slider {
+        display: block !important;
+    }
+
+    .app_settings .header_tab .vui_tabs--navbar.vui_tabs--nav-pink .vui_tabs--nav-item-active .vui_tabs--nav-text {
+        color: var(--v_brand_pink) !important;
+    }
+
+    .app_settings .header_tab .vui_tabs--navbar.vui_tabs--nav-pink .vui_tabs--nav-item:hover .vui_tabs--nav-text {
+        color: var(--v_brand_pink) !important;
+    }
+}
