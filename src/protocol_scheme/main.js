@@ -23,15 +23,27 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 exports.protocolRegister = (protocol) => {
-    if (!protocol.isProtocolHandled("local")) {
-        protocol.handle("local", (req) => {
+    const intercepted = protocol.isProtocolIntercepted("local");
+
+    if (!intercepted) {
+        protocol.interceptFileProtocol("local", (req, callback) => {
             const { host, pathname } = new URL(decodeURI(req.url));
             const filepath = path.normalize(pathname.slice(1));
+
+            let fullPath;
             switch (host) {
-                case "root": return net.fetch(`file:///${BiliLoader.path.root}/${filepath}`);
-                case "profile": return net.fetch(`file:///${BiliLoader.path.profile}/${filepath}`);
-                default: return net.fetch(`file://${host}/${filepath}`);
+                case "root":
+                    fullPath = path.join(BiliLoader.path.root, filepath);
+                    break;
+                case "profile":
+                    fullPath = path.join(BiliLoader.path.profile, filepath);
+                    break;
+                default:
+                    fullPath = path.join(host, filepath);
+                    break;
             }
+
+            callback({ path: fullPath });
         });
     }
-}
+};
