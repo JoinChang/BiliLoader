@@ -1,4 +1,4 @@
-import { Button, Checkbox, ConfirmDialog, FlexRow, Margin, Text, Title } from "../components/index.js";
+import {Button, Checkbox, ConfirmDialog, FlexRow, Margin, Radio, RadioGroup, Text, Title} from "../components/index.js";
 import { ConfigManager } from "../config.js";
 
 export class PluginConfigView {
@@ -71,6 +71,16 @@ export class PluginConfigView {
                         await this.config.set("isAppDevMode", value);
                     },
                     margin: { marginTop: Margin.XS },
+                }),
+                new RadioGroup({
+                    label: "测试控件",
+                    defaultValue: "test1",
+                    options: [
+                        { label: "test1", value: "test1" },
+                        { label: "test2", value: "test2" },
+                        { label: "test3", value: "test3", disabled: true },
+                    ],
+                    onChange: (val) => console.log("当前选择：", val),
                 })
             ]
         });
@@ -111,9 +121,9 @@ export class PluginConfigView {
                         new Button({
                             text: "检查更新",
                             onClick: async () => {
-                                new ConfirmDialog({
+                                await new ConfirmDialog({
                                     title: "提示",
-                                    message: "检查更新功能尚未实现",
+                                    content: "检查更新功能尚未实现",
                                 }).show();
                             }
                         }),
@@ -143,10 +153,10 @@ export class PluginConfigView {
         if (this.config.get("blockAppUpdate")) {
             original_wrapper.querySelectorAll(".about-button").forEach(item => {
                 if (item.innerText === "检查更新") {
-                    item.addEventListener("click", () => {
-                        new ConfirmDialog({
+                    item.addEventListener("click", async () => {
+                        await new ConfirmDialog({
                             title: "提示",
-                            message: "哼，休想要我检查更新！<(￣︿￣)>"
+                            content: "哼，休想要我检查更新！<(￣︿￣)>"
                         }).show();
                     });
                 }

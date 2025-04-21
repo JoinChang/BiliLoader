@@ -19,7 +19,10 @@ export class Text extends BaseComponent {
         this.component.classList.add("b_text", "text2");
         this.component.classList.add(`fs_${fontSize}`);
         this.component.innerText = text;
+    }
 
-        this.applyBaseStyles(this.component);
+    render() {
+        this._applyBaseStyles(this.component);
+        return this.component;
     }
 }

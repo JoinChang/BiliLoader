@@ -9,9 +9,9 @@ export const ButtonColor = Object.freeze({
 });
 
 export const ButtonSize = Object.freeze({
-    SM: "sm",
-    MD: "md",
-    LG: "lg",
+    SM: "small",
+    MD: "middle",
+    LG: "large",
 });
 
 export const ButtonVariant = Object.freeze({
@@ -23,8 +23,10 @@ export class Button extends BaseComponent {
     constructor({
         text = "",
         variant = ButtonVariant.FILLED,
-        color = ButtonColor.NONE,
         size = ButtonSize.MD,
+        color = ButtonColor.NONE,
+        rounded = false,
+        disabled = false,
         onClick = () => {},
         margin = {
             marginTop: Margin.NONE,
@@ -36,26 +38,19 @@ export class Button extends BaseComponent {
         super({
             margin: margin,
         });
-
-        this.component = document.createElement("button");
-        this.component.classList.add("vui_button");
-        if (variant === ButtonVariant.OUTLINE) {
-            this.component.classList.add("vui_button--plain");
+        this._component = app.__vue_app__.component("VButton");
+        this._props = {
+            text,
+            plain: variant === ButtonVariant.OUTLINE,
+            round: rounded,
+            disabled,
+            onClick,
+        };
+        if (size !== ButtonSize.MD) {
+            this._props.size = size;
         }
         if (color !== ButtonColor.NONE) {
-            this.component.classList.add("vui_button--color");
+            this._props.type = color;
         }
-        if (size !== ButtonSize.MD) {
-            this.component.classList.add(`vui_button--${size}`);
-        }
-
-        this.component.innerText = text;
-
-        this.component.addEventListener("click", (e) => {
-            e.preventDefault();
-            onClick && onClick();
-        });
-
-        this.applyBaseStyles(this.component);
     }
 }

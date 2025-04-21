@@ -1,53 +1,52 @@
 import { BaseComponent, Margin } from "./BaseComponent.js";
 
-export const CheckboxColor = Object.freeze({
+export const RadioColor = Object.freeze({
     BLUE: "blue",
     PINK: "pink",
 });
 
-export const CheckboxSize = Object.freeze({
+export const RadioSize = Object.freeze({
     SM: "small",
     MD: "middle",
     LG: "large",
 });
 
-export class Checkbox extends BaseComponent {
+export class Radio extends BaseComponent {
     constructor({
         label = "",
-        defaultValue = false,
-        size = CheckboxSize.LG,
-        color = CheckboxColor.PINK,
-        indeterminate = false,
+        value = "",
+        modelValue = "",
+        size = RadioSize.LG,
+        color = RadioColor.PINK,
         disabled = false,
         onChange = () => {},
         margin = {
-            marginTop: Margin.MD,
+            marginTop: Margin.NONE,
             marginRight: Margin.NONE,
             marginBottom: Margin.NONE,
             marginLeft: Margin.NONE,
         },
     }) {
-        super({
-            margin: margin,
-        });
-        this._component = app.__vue_app__.component("VCheckbox");
-        this._wrapper = document.createElement("p");
+        super({ margin });
+        this._component = app.__vue_app__.component("VRadio");
         this._props = {
-            label,
             disabled,
-            indeterminate,
-            modelValue: defaultValue,
+            value,
+            modelValue,
             "onUpdate:modelValue": (val) => {
                 this._props.modelValue = val;
                 onChange(val);
                 this.render();
             },
         };
-        if (size !== CheckboxSize.MD) {
+        if (size !== RadioSize.MD) {
             this._props.size = size;
         }
-        if (color !== CheckboxColor.BLUE) {
+        if (color !== RadioColor.BLUE) {
             this._props.theme = color;
+        }
+        this._slots = {
+            default: () => label,
         }
     }
 }

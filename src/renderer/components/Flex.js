@@ -20,7 +20,10 @@ export class FlexRow extends BaseComponent {
         children.forEach(child => {
             this.component.appendChild(child instanceof HTMLElement ? child : child.render());
         });
+    }
 
-        this.applyBaseStyles(this.component);
+    render() {
+        this._applyBaseStyles(this.component);
+        return this.component;
     }
 }

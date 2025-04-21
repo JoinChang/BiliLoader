@@ -18,7 +18,10 @@ export class Title extends BaseComponent {
         this.component = document.createElement(`h${order}`);
         this.component.classList.add("b_text");
         this.component.innerText = text;
+    }
 
-        this.applyBaseStyles(this.component);
+    render() {
+        this._applyBaseStyles(this.component);
+        return this.component;
     }
 }
