@@ -35,10 +35,14 @@ export async function getVueRuntime(vueRuntimeURL = null) {
         vueRuntimeScript.src = vueRuntimeURL;
         document.head.appendChild(vueRuntimeScript);
 
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             vueRuntimeScript.onload = () => {
                 // URL.revokeObjectURL(vueRuntimeURL);
                 resolve(vueRuntimeURL);
+            };
+            vueRuntimeScript.onerror = (e) => {
+                console.error("Failed to load Vue runtime blob script", e);
+                reject(e);
             };
         });
     } catch (error) {

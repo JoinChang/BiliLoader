@@ -9,7 +9,10 @@ window.BiliComponents = Components;
 
 (async () => {
     // 加载 Vue 运行时
-    let vueRuntimeURL = await BiliLoader.api.getCache("vueRuntimeURL");
+    let vueRuntimeURL = null;
+    if (document.URL !== "https://bilipc.bilibili.com/index.html") {
+        vueRuntimeURL = await BiliLoader.api.getCache("vueRuntimeURL");
+    }
     vueRuntimeURL = await getVueRuntime(vueRuntimeURL);
     await BiliLoader.api.setCache("vueRuntimeURL", vueRuntimeURL);
     console.log("[Renderer] Vue Runtime Loaded");

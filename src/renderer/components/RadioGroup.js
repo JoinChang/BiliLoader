@@ -33,17 +33,15 @@ export class RadioGroup extends BaseComponent {
             },
         };
         this._slots = {
-            default: () => [
-                ...options.map((option) => {
-                    return new Radio({
-                        label: option.label,
-                        value: option.value,
-                        size,
-                        color,
-                        disabled: disabled || option.disabled,
-                    }).renderVNode();
-                }
-            )],
+            default: () => options.map((option) => {
+                return new Radio({
+                    label: option.label,
+                    value: option.value,
+                    size,
+                    color,
+                    disabled: disabled || option.disabled,
+                }).renderVNode();
+            }),
         };
     }
 

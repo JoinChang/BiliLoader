@@ -1,4 +1,4 @@
-import {Button, Checkbox, ConfirmDialog, FlexRow, Margin, Radio, RadioGroup, Text, Title} from "../components/index.js";
+import { Button, Checkbox, ConfirmDialog, FlexRow, Margin, RadioGroup, Text, Title } from "../components/index.js";
 import { ConfigManager } from "../config.js";
 
 export class PluginConfigView {
