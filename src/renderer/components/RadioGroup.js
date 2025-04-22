@@ -1,5 +1,5 @@
-import {BaseComponent, Margin} from "./BaseComponent.js";
-import {Radio, RadioColor, RadioSize} from "./Radio.js";
+import { BaseComponent, Margin } from "./BaseComponent.js";
+import { Radio, RadioColor, RadioSize } from "./Radio.js";
 
 export class RadioGroup extends BaseComponent {
     constructor({
