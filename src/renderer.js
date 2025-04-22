@@ -8,9 +8,13 @@ import Components from "./renderer/components/index.js";
 window.BiliComponents = Components;
 
 (async () => {
-    const Vue = await getVueRuntime();
-    console.log("[Renderer] Vue Runtime Loaded", Vue);
+    // 加载 Vue 运行时
+    let vueRuntimeURL = await BiliLoader.api.getCache("vueRuntimeURL");
+    vueRuntimeURL = await getVueRuntime(vueRuntimeURL);
+    await BiliLoader.api.setCache("vueRuntimeURL", vueRuntimeURL);
+    console.log("[Renderer] Vue Runtime Loaded");
 
+    // 初始化插件 Renderer
     const loader = new PluginRendererLoader();
     await loader.initialize();
 

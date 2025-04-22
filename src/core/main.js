@@ -58,6 +58,17 @@ function writeConfig(path, config) {
     }
 }
 
+// 通用缓存对象
+const _cache = new Map();
+
+function setCache(key, value) {
+    _cache.set(key, value);
+}
+
+function getCache(key) {
+    return _cache.get(key);
+}
+
 // BiliLoader 对象
 const BiliLoader = {
     path: {
@@ -82,6 +93,8 @@ const BiliLoader = {
         writeConfig: (pluginId, config) => writeConfig(getConfigPath(pluginId), config),
         openExternal: shell.openExternal,
         openFolder: shell.showItemInFolder,
+        setCache,
+        getCache,
     },
     plugins: {}
 };

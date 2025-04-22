@@ -13,6 +13,8 @@ Object.defineProperty(globalThis, "BiliLoader", {
             writeConfig: (...args) => invokeAPI("writeConfig", args),
             openExternal: (...args) => invokeAPI("openExternal", args),
             openFolder: (...args) => invokeAPI("openFolder", args),
+            setCache: (...args) => invokeAPI("setCache", args),
+            getCache: (...args) => invokeAPI("getCache", args),
         },
     }
 });
