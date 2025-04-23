@@ -14,15 +14,12 @@ export class Text extends BaseComponent {
         super({
             margin: margin,
         });
-
-        this.component = document.createElement("p");
-        this.component.classList.add("b_text", "text2");
-        this.component.classList.add(`fs_${fontSize}`);
-        this.component.innerText = text;
-    }
-
-    render() {
-        this._applyBaseStyles(this.component);
-        return this.component;
+        this._component = "p";
+        this._props = {
+            class: ["b_text", "text2", `fs_${fontSize}`],
+        }
+        this._slots = {
+            default: () => text,
+        };
     }
 }

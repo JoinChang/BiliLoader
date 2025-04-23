@@ -18,18 +18,20 @@ export class RadioGroup extends BaseComponent {
         },
     }) {
         super({ margin });
+        const { ref } = Vue;
+        this.value = ref(defaultValue);
+
+        this._wrapper_component = "div";
         this._component = app.__vue_app__.component("VRadioGroup");
-        this._wrapper = document.createElement("div");
         this._label = label;
         this._props = {
             size,
             disabled,
             theme: color,
-            modelValue: defaultValue,
+            modelValue: this.value,
             "onUpdate:modelValue": (val) => {
-                this._props.modelValue = val;
+                this.value.value = val;
                 onChange(val);
-                this.render();
             },
         };
         this._slots = {

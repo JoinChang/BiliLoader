@@ -19,9 +19,9 @@ export class BaseComponent {
         },
     } = {}) {
         this._margin = margin;
-        // 在 Component 外层是否包裹一层 Wrapper（样式会对其生效）
-        this._wrapper = null;
 
+        // 在 Component 外层是否包裹一层 Wrapper（样式会对其生效）
+        this._wrapper_component = null;
         // Vue 组件的构造函数
         this._component = null;
         // Vue 组件的 props
@@ -38,37 +38,23 @@ export class BaseComponent {
         return Vue.createVNode(this._component, { ...this._props }, { ...this._slots });
     }
 
-    // 渲染 Vue 组件为 DOM 元素
-    render() {
-        const { render } = Vue;
+    // 渲染 Vue 组件为 VNode
+    renderVNode() {
+        const { mergeProps, createVNode } = Vue;
 
-        if (this._wrapper) {
-            const vnode = this._initVNode();
-            render(vnode, this._wrapper);
-            this.component = this._wrapper;
-        } else {
-            const wrapper = document.createElement('div');
-            const vnode = this._initVNode();
-            render(vnode, wrapper);
-            this.component = wrapper.firstChild;
+        let vnode = this._initVNode();
+
+        if (this._wrapper_component) {
+            vnode = createVNode(this._wrapper_component, {}, [vnode]);
         }
 
-        this._applyBaseStyles(this.component);
-        return this.component;
-    }
-
-    // 渲染 Vue 组件为 VNode（不包含 Wrapper）
-    renderVNode() {
-        const vnode = this._initVNode();
-
-        vnode.props = {
+        vnode.props = mergeProps(vnode.props, {
             class: (() => {
                 const target = document.createElement('div');
                 this._applyBaseStyles(target);
                 return target.className;
             })(),
-            ...vnode.props
-        }
+        });
 
         return vnode;
     }

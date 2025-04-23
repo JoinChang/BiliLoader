@@ -13,17 +13,17 @@ export class FlexRow extends BaseComponent {
         super({
             margin: margin,
         });
-
-        this.component = document.createElement("div");
-        this.component.classList.add("flex_start");
-
-        children.forEach(child => {
-            this.component.appendChild(child instanceof HTMLElement ? child : child.render());
-        });
-    }
-
-    render() {
-        this._applyBaseStyles(this.component);
-        return this.component;
+        this._component = "div";
+        this._props = {
+            class: ["flex_start"],
+        };
+        this._slots = {
+            default: () => children.map(child => {
+                if (child instanceof BaseComponent) {
+                    return child.renderVNode();
+                }
+                return child;
+            }),
+        };
     }
 }

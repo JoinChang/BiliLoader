@@ -30,17 +30,19 @@ export class Checkbox extends BaseComponent {
         super({
             margin: margin,
         });
+        const { ref } = Vue;
+        this.value = ref(defaultValue);
+
         this._component = app.__vue_app__.component("VCheckbox");
-        this._wrapper = document.createElement("p");
+        this._wrapper_component = "p";
         this._props = {
             label,
             disabled,
             indeterminate,
-            modelValue: defaultValue,
+            modelValue: this.value,
             "onUpdate:modelValue": (val) => {
-                this._props.modelValue = val;
+                this.value.value = val;
                 onChange(val);
-                this.render();
             },
         };
         if (size !== CheckboxSize.MD) {

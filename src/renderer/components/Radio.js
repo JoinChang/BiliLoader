@@ -28,15 +28,17 @@ export class Radio extends BaseComponent {
         },
     }) {
         super({ margin });
+        const { ref } = Vue;
+        this.value = ref(value);
+
         this._component = app.__vue_app__.component("VRadio");
         this._props = {
             disabled,
             value,
-            modelValue,
+            modelValue: this.value,
             "onUpdate:modelValue": (val) => {
-                this._props.modelValue = val;
+                this.value.value = val;
                 onChange(val);
-                this.render();
             },
         };
         if (size !== RadioSize.MD) {

@@ -61,12 +61,7 @@ export class PluginRendererLoader {
             const plugin = this.pluginExports[pluginId];
             if (typeof plugin.onSettingsPageLoaded === "function") {
                 try {
-                    const container = document.createElement("div");
-                    await Promise.resolve(plugin.onSettingsPageLoaded(container));
-                    view.createSettingsItem({
-                        name: BiliLoader.plugins[pluginId].manifest.name,
-                        children: [container],
-                    });
+                    await Promise.resolve(plugin.onSettingsPageLoaded(view));
                 } catch (e) {
                     console.error(`[Renderer] 插件 ${pluginId} onSettingsPageLoaded 执行出错: ${e.message}`);
                 }

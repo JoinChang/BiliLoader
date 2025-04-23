@@ -14,14 +14,12 @@ export class Title extends BaseComponent {
         super({
             margin: margin,
         });
-
-        this.component = document.createElement(`h${order}`);
-        this.component.classList.add("b_text");
-        this.component.innerText = text;
-    }
-
-    render() {
-        this._applyBaseStyles(this.component);
-        return this.component;
+        this._component = `h${order}`;
+        this._props = {
+            class: ["b_text"],
+        };
+        this._slots = {
+            default: () => text,
+        };
     }
 }

@@ -1,5 +1,34 @@
-import { Button, Checkbox, ConfirmDialog, FlexRow, Margin, RadioGroup, Text, Title } from "../components/index.js";
+import {
+    BaseComponent, Button, Checkbox, ConfirmDialog, FlexRow, Margin, RadioGroup, Text, Title
+} from "../components/index.js";
 import { ConfigManager } from "../config.js";
+
+const SettingsPanel = {
+    props: {
+        items: Array,
+    },
+    setup(props) {
+        const { h, Fragment } = Vue;
+
+        return () => h(Fragment, null, [
+            ...props.items.map(item => {
+                return h("div", { class: "settings_content--item" }, [
+                    new Title({
+                        text: item.name,
+                        order: 4,
+                        margin: { marginTop: Margin.ZERO },
+                    }).renderVNode(),
+                    ...item.children.map(child => {
+                        if (child instanceof BaseComponent) {
+                            return child.renderVNode();
+                        }
+                        return child;
+                    })
+                ]);
+            })
+        ]);
+    }
+};
 
 export class PluginConfigView {
     constructor(config) {
@@ -9,6 +38,10 @@ export class PluginConfigView {
         this.tabs = document.querySelector(".vui_tabs--nav");
         this.tab_slider = document.querySelector(".vui_tabs--nav-slider");
         this.settings_wrapper = null;
+
+        this.settings_items = Vue.reactive([
+            // { name: "BiliLoader", className: "", children: [...] }
+        ]);
     }
 
     static async createInstance() {
@@ -31,10 +64,11 @@ export class PluginConfigView {
     initialize() {
         this.injectStyle();
         this.initializeSettingsWrapper();
+        this.mountSettingsWrapper();
         this.createTabsItem({ title: "BiliLoader" });
-        this.renderPluginSettings();
-        this.renderAboutSection();
-        this.bindTabSliderUpdate();
+        this._renderPluginSettings();
+        this._renderAboutSection();
+        this._bindTabSliderUpdate();
     }
 
     injectStyle() {
@@ -45,9 +79,27 @@ export class PluginConfigView {
         document.head.appendChild(style);
     }
 
-    renderPluginSettings() {
+    mountSettingsWrapper() {
+        const { createApp, h } = Vue;
+
+        // 使用 Vue 创建并挂载应用
+        if (this.settings_wrapper.__vue_app__) {
+            return;
+        }
+
+        const settings_items = this.settings_items;
+
+        createApp({
+            setup() {
+                return () => h(SettingsPanel, { items: settings_items });
+            }
+        }).mount(this.settings_wrapper);
+    }
+
+    _renderPluginSettings() {
         this.createSettingsItem({
             name: "BiliLoader",
+            className: "bl-plugin-item",
             children: [
                 new Checkbox({
                     label: "启用插件",
@@ -86,7 +138,7 @@ export class PluginConfigView {
         });
     }
 
-    renderAboutSection() {
+    _renderAboutSection() {
         this.createSettingsItem({
             name: "关于 BiliLoader",
             className: "bl-about-item",
@@ -133,7 +185,7 @@ export class PluginConfigView {
         });
     }
 
-    bindTabSliderUpdate() {
+    _bindTabSliderUpdate() {
         const reloadSlider = () => {
             if (!this.tab_slider) return;
             const tab = this.tabs.querySelector(`[data-bl-tab="${this.current_tab}"]`);
@@ -217,21 +269,19 @@ export class PluginConfigView {
     }
 
     createSettingsItem({ name, className, children }) {
-        const item = document.createElement("div");
-        item.classList.add("settings_content--item");
-        if (className) item.classList.add(className);
+        const newItem = { name, className, children };
 
-        item.appendChild(new Title({
-            text: name,
-            order: 4,
-            margin: { marginTop: Margin.ZERO },
-        }).render());
-
-        children.forEach(child => {
-            item.appendChild(child instanceof HTMLElement ? child : child.render());
-        });
-
-        const about_item = this.settings_wrapper.querySelector(".bl-about-item");
-        about_item ? this.settings_wrapper.insertBefore(item, about_item) : this.settings_wrapper.appendChild(item);
+        if (className === "bl-about-item") {
+            this.settings_items.push(newItem);
+        } else {
+            const index = this.settings_items.findIndex(
+                item => item.className === "bl-about-item"
+            );
+            if (index === -1) {
+                this.settings_items.push(newItem);
+            } else {
+                this.settings_items.splice(index, 0, newItem);
+            }
+        }
     }
 }
