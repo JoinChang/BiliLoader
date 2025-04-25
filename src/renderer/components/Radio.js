@@ -15,7 +15,6 @@ export class Radio extends BaseComponent {
     constructor({
         label = "",
         value = "",
-        modelValue = "",
         size = RadioSize.LG,
         color = RadioColor.PINK,
         disabled = false,
@@ -28,16 +27,11 @@ export class Radio extends BaseComponent {
         },
     }) {
         super({ margin });
-        const { ref } = Vue;
-        this.value = ref(value);
-
         this._component = app.__vue_app__.component("VRadio");
         this._props = {
             disabled,
             value,
-            modelValue: this.value,
             "onUpdate:modelValue": (val) => {
-                this.value.value = val;
                 onChange(val);
             },
         };

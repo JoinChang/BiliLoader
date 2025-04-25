@@ -1,9 +1,9 @@
 import {
-    BaseComponent, Button, Checkbox, ConfirmDialog, FlexRow, Margin, RadioGroup, Text, Title
+    BaseComponent, Button, Checkbox, ConfirmDialog, FlexRow, Margin, RadioGroup, Tabs, Text, Title
 } from "../components/index.js";
 import { ConfigManager } from "../config.js";
 
-const SettingsPanel = {
+const PluginConfigPanel = {
     props: {
         items: Array,
     },
@@ -33,12 +33,7 @@ const SettingsPanel = {
 export class PluginConfigView {
     constructor(config) {
         this.config = config;
-        this.current_tab = null;
-
-        this.tabs = document.querySelector(".vui_tabs--nav");
-        this.tab_slider = document.querySelector(".vui_tabs--nav-slider");
         this.settings_wrapper = null;
-
         this.settings_items = Vue.reactive([
             // { name: "BiliLoader", className: "", children: [...] }
         ]);
@@ -53,7 +48,7 @@ export class PluginConfigView {
         await config.load();
 
         const view = new PluginConfigView(config);
-        if (view.tabs.querySelector("[data-bl-tab='BiliLoader']")) {
+        if (document.getElementsByClassName("vui_tabs--nav-item").length > 1) {
             return null;
         }
 
@@ -63,12 +58,11 @@ export class PluginConfigView {
 
     initialize() {
         this.injectStyle();
+        this.renderTabs();
         this.initializeSettingsWrapper();
-        this.mountSettingsWrapper();
-        this.createTabsItem({ title: "BiliLoader" });
+        this.renderSettingsWrapper();
         this._renderPluginSettings();
         this._renderAboutSection();
-        this._bindTabSliderUpdate();
     }
 
     injectStyle() {
@@ -79,21 +73,39 @@ export class PluginConfigView {
         document.head.appendChild(style);
     }
 
-    mountSettingsWrapper() {
-        const { createApp, h } = Vue;
+    renderTabs() {
+        const { render } = Vue;
 
-        // 使用 Vue 创建并挂载应用
-        if (this.settings_wrapper.__vue_app__) {
-            return;
-        }
+        const vnode = new Tabs({
+            defaultValue: "Settings",
+            tabs: [
+                { label: "设置", value: "Settings" },
+                { label: "BiliLoader", value: "BiliLoader" },
+            ],
+            onTabChange: (tab) => {
+                document.getElementsByClassName("settings_content--wrapper").forEach((item) => {
+                    item.style.display = "none";
+                });
+                const current_wrapper = document.querySelector(`.settings_content--wrapper[data-bl-tab="${tab}"]`);
+                if (current_wrapper) {
+                    current_wrapper.style.display = "block";
+                }
+            },
+        }).renderVNode();
+        vnode.appContext = app.__vue_app__._context; // 继承上下文
 
-        const settings_items = this.settings_items;
+        const tabs_wrapper = document.querySelector(".header_slot>div");
+        tabs_wrapper.innerHTML = "";
+        render(vnode, tabs_wrapper);
+    }
 
-        createApp({
-            setup() {
-                return () => h(SettingsPanel, { items: settings_items });
-            }
-        }).mount(this.settings_wrapper);
+    renderSettingsWrapper() {
+        const { h, render } = Vue;
+
+        const vnode = h(PluginConfigPanel, { items: this.settings_items });
+        vnode.appContext = app.__vue_app__._context; // 继承上下文
+
+        render(vnode, this.settings_wrapper);
     }
 
     _renderPluginSettings() {
@@ -185,21 +197,9 @@ export class PluginConfigView {
         });
     }
 
-    _bindTabSliderUpdate() {
-        const reloadSlider = () => {
-            if (!this.tab_slider) return;
-            const tab = this.tabs.querySelector(`[data-bl-tab="${this.current_tab}"]`);
-            if (tab) {
-                this.tab_slider.style.left = `${tab.offsetLeft + (tab.offsetWidth - 18) / 2}px`;
-            }
-        };
-        navigation.addEventListener("navigatesuccess", () => setTimeout(reloadSlider, 50));
-        window.addEventListener("resize", reloadSlider);
-    }
-
     initializeSettingsWrapper() {
         const original_wrapper = document.querySelector(".settings_content--wrapper");
-        original_wrapper.setAttribute("data-bl-tab", "设置");
+        original_wrapper.setAttribute("data-bl-tab", "Settings");
 
         // 这里处理一下检查更新按钮的逻辑
         if (this.config.get("blockAppUpdate")) {
@@ -222,50 +222,6 @@ export class PluginConfigView {
 
         this.settings_wrapper = wrapper;
         original_wrapper.parentNode.appendChild(wrapper);
-    }
-
-    createTabsItem({ title, onClick }) {
-        const clickHandler = (e) => {
-            const items = this.tabs.querySelectorAll(".vui_tabs--nav-item");
-            items.forEach((item) => {
-                item.classList.remove("vui_tabs--nav-item-active");
-            });
-
-            const navText = e.currentTarget.querySelector(".vui_tabs--nav-text");
-            if (navText) {
-                e.currentTarget.classList.add("vui_tabs--nav-item-active");
-                this.current_tab = navText.innerText;
-            }
-
-            if (this.tab_slider) {
-                this.tab_slider.style.left = `${e.currentTarget.offsetLeft + (e.currentTarget.offsetWidth - 18) / 2}px`;
-            }
-
-            // 切换页面
-            document.getElementsByClassName("settings_content--wrapper").forEach((item) => {
-                item.style.display = "none";
-            });
-            const current_wrapper = document.querySelector(`.settings_content--wrapper[data-bl-tab="${this.current_tab}"]`);
-            if (current_wrapper) {
-                current_wrapper.style.display = "block";
-            }
-        }
-
-        // 复制原始的 tab 项
-        const original_item = this.tabs.querySelector(".vui_tabs--nav-item");
-        original_item.setAttribute("data-bl-tab", original_item.querySelector(".vui_tabs--nav-text").innerText);
-        const item = original_item.cloneNode(true);
-        item.setAttribute("data-bl-tab", title);
-        item.classList.remove("vui_tabs--nav-item-active");
-        item.addEventListener("click", (e) => {
-            clickHandler(e);
-            onClick && onClick();
-        });
-        item.querySelector(".vui_tabs--nav-text").innerText = title;
-
-        original_item.addEventListener("click", clickHandler);
-        original_item.click();
-        this.tabs.appendChild(item);
     }
 
     createSettingsItem({ name, className, children }) {

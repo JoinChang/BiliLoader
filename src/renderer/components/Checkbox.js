@@ -30,8 +30,7 @@ export class Checkbox extends BaseComponent {
         super({
             margin: margin,
         });
-        const { ref } = Vue;
-        this.value = ref(defaultValue);
+        this.value = Vue.ref(defaultValue);
 
         this._component = app.__vue_app__.component("VCheckbox");
         this._wrapper_component = "p";

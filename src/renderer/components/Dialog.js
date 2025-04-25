@@ -1,4 +1,4 @@
-import { Button } from "./Button.js";
+import { Button, ButtonColor } from "./Button.js";
 import { Margin } from "./BaseComponent.js";
 import { waitForVueAppContext } from "../utils/vueAppReady.js";
 
@@ -53,7 +53,7 @@ export class ConfirmDialog {
                     }).renderVNode(),
                     new Button({
                         text: this._confirmText,
-                        color: this._danger ? "danger" : "pink",
+                        color: this._danger ? ButtonColor.DANGER : ButtonColor.PINK,
                         onClick: () => {
                             this._props.onConfirm();
                             this.hide();

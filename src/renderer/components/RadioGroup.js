@@ -18,8 +18,7 @@ export class RadioGroup extends BaseComponent {
         },
     }) {
         super({ margin });
-        const { ref } = Vue;
-        this.value = ref(defaultValue);
+        this.value = Vue.ref(defaultValue);
 
         this._wrapper_component = "div";
         this._component = app.__vue_app__.component("VRadioGroup");

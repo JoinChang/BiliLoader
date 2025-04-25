@@ -28,9 +28,6 @@ export class BaseComponent {
         this._props = {};
         // Vue 组件的 slots
         this._slots = {};
-
-        // 渲染后的 DOM 元素
-        this.component = null;
     }
 
     // 初始化 Vue 组件
@@ -57,13 +54,6 @@ export class BaseComponent {
         });
 
         return vnode;
-    }
-
-    // 挂载组件
-    mount(target) {
-        if (this.component) {
-            target.appendChild(this.component);
-        }
     }
 
     _applyBaseStyles(target) {

@@ -17,13 +17,15 @@ export class Notification {
         onClose = () => {},
     }) {
         this._wrapper = document.body;
-        this._content = content;
         this._props = {
             position,
             duration,
             offset,
             titleText: title,
             onClose,
+        };
+        this._slots = {
+            default: () => content,
         };
     }
 
@@ -37,7 +39,7 @@ export class Notification {
                 if (!value) this.hide();
             }
         }, {
-            default: () => this._content,
+            ...this._slots,
         });
 
         render(vnode, this._wrapper);
