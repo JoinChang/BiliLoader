@@ -1,0 +1,11 @@
+{
+  "manifest_version": 1,
+  "id": "theme-fix",
+  "type": "extension",
+  "name": "主题切换修复",
+  "version": "1.0.0",
+  "description": "修复客户端无法实时切换主题的问题。",
+  "injects": {
+    "renderer": "src/renderer.js"
+  }
+}

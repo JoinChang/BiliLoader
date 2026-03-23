@@ -1,0 +1,9 @@
+{
+  "name": "bililoader-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "ws": "^8.20.0"
+  }
+}

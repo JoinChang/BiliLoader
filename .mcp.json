@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "bililoader-mcp": {
+      "command": "node",
+      "args": ["packages/mcp/index.js"],
+      "env": {
+        "CDP_PORT": "9222"
+      }
+    }
+  }
+}

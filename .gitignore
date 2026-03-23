@@ -1,5 +1,10 @@
-.idea
-.vscode
-
-node_modules
+node_modules/
 package-lock.json
+*.log
+
+.claude/
+.vscode/
+.idea/
+
+.DS_Store
+Thumbs.db

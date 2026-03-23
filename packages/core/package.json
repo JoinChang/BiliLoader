@@ -1,0 +1,9 @@
+{
+  "name": "bililoader-core",
+  "version": "0.0.0",
+  "private": true,
+  "main": "src/entry.js",
+  "dependencies": {
+    "electron-log": "^4.4.8"
+  }
+}
