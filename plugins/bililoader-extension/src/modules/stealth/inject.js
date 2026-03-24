@@ -68,14 +68,16 @@
         m.addedNodes.forEach(function (node) {
           if (node.nodeType !== 1 || !node.classList || !node.classList.contains('danmaku-item')) return;
 
-          // 去重：遮罩弹幕如果已有同内容非遮罩版则删除
+          // 去重：遮罩弹幕如果已有同内容非遮罩版则删除（只查最近 50 条）
           var nameEl = node.querySelector('.user-name');
           if (nameEl && nameEl.textContent.indexOf('***') >= 0) {
             var content = node.dataset.danmaku || '';
-            var siblings = chatItems.querySelectorAll('.chat-item.danmaku-item');
-            for (var i = 0; i < siblings.length; i++) {
-              if (siblings[i] !== node && siblings[i].dataset.danmaku === content) {
-                var sibName = siblings[i].querySelector('.user-name')?.textContent || '';
+            var children = chatItems.children;
+            var start = Math.max(0, children.length - 50);
+            for (var i = children.length - 1; i >= start; i--) {
+              var sib = children[i];
+              if (sib !== node && sib.dataset.danmaku === content) {
+                var sibName = sib.querySelector('.user-name')?.textContent || '';
                 if (sibName.indexOf('***') < 0) { node.remove(); return; }
               }
             }
@@ -85,7 +87,7 @@
           var item = extractInfo(node);
           if (!item) return;
           if (!tryReplace(item)) {
-            pendingQueue.push(item);
+            if (pendingQueue.length < 200) pendingQueue.push(item);
           }
         });
       });

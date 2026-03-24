@@ -76,6 +76,8 @@ async function getAnonDanmuToken(roomId, session) {
 }
 
 exports.register = (window, isEnabled) => {
+  if (!isEnabled()) return;
+
   const winSession = window.webContents.session;
 
   if (!winSession.__stealthRegistered) {
@@ -84,10 +86,7 @@ exports.register = (window, isEnabled) => {
     // 阻止心跳上报
     winSession.webRequest.onBeforeRequest(
       { urls: ["*://live-trace.bilibili.com/xlive/data-interface/v1/x25Kn/X*"] },
-      (_, callback) => {
-        if (isEnabled()) callback({ redirectURL: "data:application/json,%7B%22code%22%3A0%7D" });
-        else callback({});
-      }
+      (_, callback) => { callback({ redirectURL: "data:application/json,%7B%22code%22%3A0%7D" }); }
     );
 
     // preload 注入（在页面 JS 执行前 hook WebSocket）
@@ -107,7 +106,7 @@ exports.register = (window, isEnabled) => {
   // 预获取 token（在 iframe 加载前就准备好，减少延迟）
   let cachedToken = null;
   wc.on("did-start-navigation", (_, url) => {
-    if (!isEnabled() || !url.includes("live.bilibili.com")) return;
+    if (!url.includes("live.bilibili.com")) return;
     const roomMatch = url.match(/\/(\d+)/);
     if (roomMatch) {
       getAnonDanmuToken(roomMatch[1], winSession).then((token) => {
@@ -118,22 +117,47 @@ exports.register = (window, isEnabled) => {
 
   // iframe 加载完成后注入 token + style
   wc.on("did-frame-finish-load", () => {
-    if (!isEnabled() || !wc.getURL().includes("live.bilibili.com")) return;
+    if (!wc.getURL().includes("live.bilibili.com")) return;
     try {
       wc.mainFrame.framesInSubtree.forEach((frame) => {
         if (!frame.url.includes("live.bilibili.com")) return;
 
-        // 隐藏"为保护用户隐私"提示
         frame.executeJavaScript(`
+          // 隐藏隐私提示
           if (!document.getElementById('__stealth-style')) {
             var s = document.createElement('style');
             s.id = '__stealth-style';
             s.textContent = '.privacy-dialog, .privacy-dialog-tip-text, .privacy-dialog-ctnr { display: none !important; }';
             (document.head || document.documentElement).appendChild(s);
           }
+          // 自己发的弹幕去重
+          if (typeof window.__GREAT_TOILET__ !== 'function' || !window.__GREAT_TOILET__.__stealth) {
+            window.__GREAT_TOILET__ = function(t) {
+              if (t.cmd === 'DANMU_MSG' && t.info && t.info[0]) {
+                if (window.BilibiliLive && window.BilibiliLive.RND === t.info[0][5]) {
+                  t.cmd = '__SELF_DANMU';
+                }
+              }
+            };
+            window.__GREAT_TOILET__.__stealth = true;
+          }
+          // 画面弹幕去重
+          (function patchEngine() {
+            var eng = window.LiveDanmakuEngine && window.LiveDanmakuEngine.default;
+            if (!eng) { setTimeout(patchEngine, 500); return; }
+            if (eng.__stealthPatched) return;
+            eng.__stealthPatched = true;
+            var origHandle = eng.prototype.handleSocketMessage;
+            eng.prototype.handleSocketMessage = function(e, n) {
+              if (e.cmd && e.cmd.startsWith('DANMU_MSG') && e.info && e.info[0]) {
+                if (window.BilibiliLive && window.BilibiliLive.RND === e.info[0][5]) return;
+              }
+              return origHandle.call(this, e, n);
+            };
+          })();
         `).catch(() => {});
 
-        // 注入匿名 token + 定时刷新
+        // 注入匿名 token
         const roomMatch = frame.url.match(/\/(\d+)/);
         if (!roomMatch) return;
         const roomId = roomMatch[1];
@@ -167,9 +191,7 @@ exports.register = (window, isEnabled) => {
       dbg.on("message", (_, method, params) => {
         if (method !== "Fetch.requestPaused") return;
         const opts = { requestId: params.requestId };
-        if (isEnabled()) {
-          opts.url = params.request.url.replace(/room_id=\d+/, "room_id=" + FAKE_ROOM_ID);
-        }
+        opts.url = params.request.url.replace(/room_id=\d+/, "room_id=" + FAKE_ROOM_ID);
         dbg.sendCommand("Fetch.continueRequest", opts).catch(() => { });
       });
     } catch { }
