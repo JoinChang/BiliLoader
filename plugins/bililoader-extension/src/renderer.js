@@ -8,6 +8,7 @@ const config = new window.BiliConfigManager("bililoader-extension", {
   "stealth-live": false,
   "hide-sidebar-pages": [],
   "hide-sidebar-buttons": [],
+  "hide-home-tabs": [],
 });
 
 async function setConfig(key, value, options = {}) {
@@ -57,6 +58,41 @@ function applySidebarFilter() {
   }
 }
 
+const HOME_TABS = [
+  { label: "直播", value: "直播" },
+  { label: "热门", value: "热门" },
+  { label: "追番", value: "追番" },
+  { label: "影视", value: "影视" },
+];
+
+function applyHomeTabFilter() {
+  const hidden = config.get("hide-home-tabs") || [];
+  const nav = document.querySelector(".app_home .vui_tabs--nav");
+  if (!nav) return;
+
+  const items = nav.querySelectorAll(":scope > .vui_tabs--nav-item");
+  for (const el of items) {
+    const text = el.textContent?.trim();
+    if (text === "推荐") continue;
+    el.style.display = hidden.includes(text) ? "none" : "";
+  }
+
+  // 如果所有非推荐 tab 都被隐藏，隐藏整个 tab 栏
+  const allHidden = HOME_TABS.every(item => hidden.includes(item.value));
+  const tabsContainer = nav.closest(".vui_tabs");
+  if (tabsContainer) {
+    tabsContainer.style.display = allHidden ? "none" : "";
+  }
+
+  // 如果当前选中的 tab 被隐藏了，切换到推荐
+  const activeTab = nav.querySelector(".vui_tabs--nav-item-active");
+  const activeText = activeTab?.textContent?.trim();
+  if (activeText && hidden.includes(activeText)) {
+    const recommendTab = Array.from(items).find(el => el.textContent?.trim() === "推荐");
+    recommendTab?.click();
+  }
+}
+
 function onBvidFound(element) {
   const bv = element.innerText;
   const av = dec(bv);
@@ -74,6 +110,20 @@ export const onPageLoaded = async (url) => {
 
   if (url.includes("/index.html")) {
     applySidebarFilter();
+  }
+
+  if (url.includes("#/page/home/")) {
+    if (document.querySelector(".app_home .vui_tabs--nav")) {
+      applyHomeTabFilter();
+    } else {
+      const observer = new MutationObserver(() => {
+        if (document.querySelector(".app_home .vui_tabs--nav")) {
+          observer.disconnect();
+          applyHomeTabFilter();
+        }
+      });
+      observer.observe(document.body, { childList: true, subtree: true });
+    }
   }
 
   if (url.includes("#/page/home/recommends")) {
@@ -120,6 +170,38 @@ export const onSettingsPageLoaded = (view) => {
   const { Checkbox, CheckboxGroup, FlexRow, Margin, Tooltip } = window.BiliComponents;
 
   view.createSettingsItem({
+    name: "首页",
+    className: "bl-home-item",
+    children: [
+      new CheckboxGroup({
+        label: "隐藏首页标签",
+        defaultValue: config.get("hide-home-tabs") || [],
+        options: HOME_TABS,
+        onChange: async (value) => {
+          await setConfig("hide-home-tabs", value);
+          applyHomeTabFilter();
+        },
+      }),
+      new Checkbox({
+        label: "过滤广告",
+        defaultValue: config.get("filter-ad"),
+        onChange: async (value) => {
+          await setConfig("filter-ad", value);
+        },
+        margin: { marginTop: Margin.MD },
+      }),
+      new Checkbox({
+        label: "过滤推广视频（小火箭）",
+        defaultValue: config.get("filter-rocket-ad"),
+        onChange: async (value) => {
+          await setConfig("filter-rocket-ad", value);
+        },
+        margin: { marginTop: Margin.XS },
+      }),
+    ]
+  });
+
+  view.createSettingsItem({
     name: "侧边栏",
     className: "bl-sidebar-item",
     children: [
@@ -140,29 +222,6 @@ export const onSettingsPageLoaded = (view) => {
           await setConfig("hide-sidebar-buttons", value);
           applySidebarFilter();
         },
-      }),
-    ]
-  });
-
-  view.createSettingsItem({
-    name: "首页",
-    className: "bl-home-item",
-    children: [
-      new Checkbox({
-        label: "过滤广告",
-        defaultValue: config.get("filter-ad"),
-        onChange: async (value) => {
-          await setConfig("filter-ad", value);
-        },
-        margin: { marginTop: Margin.MD },
-      }),
-      new Checkbox({
-        label: "过滤推广视频（小火箭）",
-        defaultValue: config.get("filter-rocket-ad"),
-        onChange: async (value) => {
-          await setConfig("filter-rocket-ad", value);
-        },
-        margin: { marginTop: Margin.XS },
       }),
     ]
   });

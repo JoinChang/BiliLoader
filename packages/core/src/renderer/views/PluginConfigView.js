@@ -116,9 +116,7 @@ export class PluginConfigView {
         new Checkbox({
           label: "启用插件",
           defaultValue: this.config.get("enabled"),
-          onChange: async (value) => {
-            await this.config.set("enabled", value);
-          },
+          onChange: (value) => this.config.set("enabled", value, { restart: true }),
           margin: { marginTop: Margin.MD },
         }),
         new Checkbox({
