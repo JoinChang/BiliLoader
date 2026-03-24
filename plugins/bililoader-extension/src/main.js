@@ -21,10 +21,6 @@ function readPluginConfig() {
 }
 
 exports.onBrowserWindowCreated = (window) => {
-  const config = readPluginConfig();
-
   // 直播间隐身
-  if (config["stealth-live"]) {
-    stealth.register(window, () => !!readPluginConfig()["stealth-live"]);
-  }
+  stealth.register(window, () => !!readPluginConfig()["stealth-live"]);
 };
