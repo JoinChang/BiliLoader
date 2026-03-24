@@ -10,4 +10,16 @@
     .app_settings .header_tab .vui_tabs--navbar.vui_tabs--nav-pink .vui_tabs--nav-item:hover .vui_tabs--nav-text {
         color: var(--v_brand_pink) !important;
     }
+
+    .bl-tooltip-help::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        height: 12px;
+        left: -8px;
+        border-top: 6px solid transparent;
+        border-bottom: 6px solid transparent;
+        border-right: 8px solid var(--bg1_float);
+    }
 }

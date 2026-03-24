@@ -6,6 +6,8 @@ const config = new window.BiliConfigManager("bililoader-extension", {
   "filter-rocket-ad": false,
   "bv2av": false,
   "stealth-live": false,
+  "hide-sidebar-pages": [],
+  "hide-sidebar-buttons": [],
 });
 
 async function setConfig(key, value, options = {}) {
@@ -18,6 +20,42 @@ async function setConfig(key, value, options = {}) {
   }
 }
 
+
+// 不可隐藏的侧边栏项
+const SIDEBAR_PAGE_EXCLUDE = ["首页"];
+const SIDEBAR_BUTTON_EXCLUDE = ["消息", "主题", "设置"];
+
+function getSidebarPages() {
+  const wrap = document.querySelector(".app_sidebar--pages-wrap");
+  if (!wrap) return [];
+  return Array.from(wrap.querySelectorAll(":scope > li.pages-item")).map(el => {
+    const a = el.querySelector("a");
+    const label = el.textContent?.trim();
+    const href = a?.getAttribute("href");
+    return { label, value: href, el };
+  }).filter(item => item.label && !SIDEBAR_PAGE_EXCLUDE.includes(item.label));
+}
+
+function getSidebarButtons() {
+  const wrap = document.querySelector(".app_sidebar--settings");
+  if (!wrap) return [];
+  return Array.from(wrap.querySelectorAll(":scope > li.settings-item")).map(el => {
+    const title = el.getAttribute("title") || el.querySelector("[title]")?.getAttribute("title");
+    return { label: title, value: title, el };
+  }).filter(item => item.label && !SIDEBAR_BUTTON_EXCLUDE.includes(item.label));
+}
+
+function applySidebarFilter() {
+  const hiddenPages = config.get("hide-sidebar-pages") || [];
+  for (const item of getSidebarPages()) {
+    item.el.style.display = hiddenPages.includes(item.value) ? "none" : "";
+  }
+
+  const hiddenButtons = config.get("hide-sidebar-buttons") || [];
+  for (const item of getSidebarButtons()) {
+    item.el.style.display = hiddenButtons.includes(item.value) ? "none" : "";
+  }
+}
 
 function onBvidFound(element) {
   const bv = element.innerText;
@@ -33,6 +71,10 @@ export const onReady = async () => {
 // 页面加载时触发
 export const onPageLoaded = async (url) => {
   await config.load();
+
+  if (url.includes("/index.html")) {
+    applySidebarFilter();
+  }
 
   if (url.includes("#/page/home/recommends")) {
     const observer = new MutationObserver(() => {
@@ -75,7 +117,32 @@ export const onPageLoaded = async (url) => {
 
 // 设置页面加载时触发
 export const onSettingsPageLoaded = (view) => {
-  const { Checkbox, Margin } = window.BiliComponents;
+  const { Checkbox, CheckboxGroup, FlexRow, Margin, Tooltip } = window.BiliComponents;
+
+  view.createSettingsItem({
+    name: "侧边栏",
+    className: "bl-sidebar-item",
+    children: [
+      new CheckboxGroup({
+        label: "隐藏导航页面",
+        defaultValue: config.get("hide-sidebar-pages") || [],
+        options: getSidebarPages(),
+        onChange: async (value) => {
+          await setConfig("hide-sidebar-pages", value);
+          applySidebarFilter();
+        },
+      }),
+      new CheckboxGroup({
+        label: "隐藏快捷按钮",
+        defaultValue: config.get("hide-sidebar-buttons") || [],
+        options: getSidebarButtons(),
+        onChange: async (value) => {
+          await setConfig("hide-sidebar-buttons", value);
+          applySidebarFilter();
+        },
+      }),
+    ]
+  });
 
   view.createSettingsItem({
     name: "首页",
@@ -119,10 +186,18 @@ export const onSettingsPageLoaded = (view) => {
     name: "直播",
     className: "bl-live-item",
     children: [
-      new Checkbox({
-        label: "隐身进入直播间",
-        defaultValue: config.get("stealth-live"),
-        onChange: (value) => setConfig("stealth-live", value),
+      new FlexRow({
+        children: [
+          new Checkbox({
+            label: "隐身进入直播间",
+            defaultValue: config.get("stealth-live"),
+            onChange: (value) => setConfig("stealth-live", value),
+          }),
+          new Tooltip({
+            text: "启用后进入直播间将不再上报入场事件，且不会在房间观众中显示。",
+            placement: "right",
+          }),
+        ],
         margin: { marginTop: Margin.MD },
       }),
     ]

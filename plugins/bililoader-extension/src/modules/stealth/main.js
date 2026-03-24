@@ -104,20 +104,53 @@ exports.register = (window, isEnabled) => {
 
   const wc = window.webContents;
 
-  // iframe 加载完成后注入匿名 token
+  // 预获取 token（在 iframe 加载前就准备好，减少延迟）
+  let cachedToken = null;
+  wc.on("did-start-navigation", (_, url) => {
+    if (!isEnabled() || !url.includes("live.bilibili.com")) return;
+    const roomMatch = url.match(/\/(\d+)/);
+    if (roomMatch) {
+      getAnonDanmuToken(roomMatch[1], winSession).then((token) => {
+        if (token) cachedToken = token;
+      });
+    }
+  });
+
+  // iframe 加载完成后注入 token + style
   wc.on("did-frame-finish-load", () => {
     if (!isEnabled() || !wc.getURL().includes("live.bilibili.com")) return;
     try {
       wc.mainFrame.framesInSubtree.forEach((frame) => {
         if (!frame.url.includes("live.bilibili.com")) return;
+
+        // 隐藏"为保护用户隐私"提示
+        frame.executeJavaScript(`
+          if (!document.getElementById('__stealth-style')) {
+            var s = document.createElement('style');
+            s.id = '__stealth-style';
+            s.textContent = '.privacy-dialog, .privacy-dialog-tip-text, .privacy-dialog-ctnr { display: none !important; }';
+            (document.head || document.documentElement).appendChild(s);
+          }
+        `).catch(() => {});
+
+        // 注入匿名 token + 定时刷新
         const roomMatch = frame.url.match(/\/(\d+)/);
         if (!roomMatch) return;
-        getAnonDanmuToken(roomMatch[1], winSession).then((token) => {
-          if (!token) return;
+        const roomId = roomMatch[1];
+
+        function injectToken(token) {
           frame.executeJavaScript(
             `window.__bililoader_stealth_setToken && window.__bililoader_stealth_setToken(${JSON.stringify(token)})`
-          ).catch(() => { });
-        });
+          ).catch(() => {});
+        }
+
+        if (cachedToken) {
+          injectToken(cachedToken);
+        } else {
+          getAnonDanmuToken(roomId, winSession).then((token) => {
+            if (token) { cachedToken = token; injectToken(token); }
+          });
+        }
       });
     } catch { }
   });

@@ -99,19 +99,10 @@
   var ANON_TOKEN = null;
   var tokenWaiters = [];
 
-  // 由主进程在获取到匿名 token 后调用
   window.__bililoader_stealth_setToken = function (token) {
     ANON_TOKEN = token;
-    // 等缓存有数据后再放行 WS 认证（确保首批弹幕也能匹配）
-    function flush() {
-      if (Object.keys(userCache).length > 0) {
-        tokenWaiters.forEach(function (cb) { cb(token); });
-        tokenWaiters = [];
-      } else {
-        setTimeout(flush, 200);
-      }
-    }
-    flush();
+    tokenWaiters.forEach(function (cb) { cb(token); });
+    tokenWaiters = [];
   };
 
   function isDanmuHost(url) {
@@ -131,7 +122,6 @@
       if (!authSent) {
         var buf = data instanceof ArrayBuffer ? new Uint8Array(data)
           : data instanceof Uint8Array ? data : null;
-        // opcode 7 = 认证包
         if (buf && buf.length > 16 && ((buf[8] << 24 | buf[9] << 16 | buf[10] << 8 | buf[11]) === 7)) {
           authSent = true;
           var headerLen = buf[4] << 8 | buf[5];
@@ -140,7 +130,6 @@
             var doSend = function (token) {
               body.uid = 0;
               body.key = token;
-              body.buvid = "";
               var encoded = new TextEncoder().encode(JSON.stringify(body));
               var pkt = new Uint8Array(headerLen + encoded.length);
               pkt.set(buf.slice(0, headerLen));
@@ -160,7 +149,6 @@
           } catch { }
         }
       }
-      // 认证包发送前缓冲后续数据（如心跳）
       if (authSent && !ready) { buffered.push(data); return; }
       return origSend(data);
     };
@@ -195,7 +183,7 @@
 
     function poll() {
       if (!roomId) roomId = extractRoomId();
-      if (!roomId || !document.getElementById('chat-items')) return;
+      if (!roomId) return;
 
       origFetch('https://api.live.bilibili.com/xlive/web-room/v1/dM/gethistory?roomid=' + roomId, {
         credentials: 'include',
@@ -204,14 +192,13 @@
           if (data.code !== 0 || !data.data || !data.data.room) return;
           data.data.room.forEach(function (dm) {
             if (!dm.nickname) return;
-            var fp = makeFingerprint(
+            userCache[makeFingerprint(
               dm.nickname.charAt(0),
               dm.medal && dm.medal[1] ? dm.medal[1] : '',
               dm.medal && dm.medal[0] ? dm.medal[0] : 0,
               dm.user_level && dm.user_level[0] ? dm.user_level[0] : 0,
               dm.guard_level || 0
-            );
-            userCache[fp] = { nickname: dm.nickname, uid: dm.uid };
+            )] = { nickname: dm.nickname, uid: dm.uid };
           });
           flushPending();
         }).catch(function () { });
