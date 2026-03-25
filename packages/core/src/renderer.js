@@ -8,12 +8,16 @@ import Components from "./renderer/components/index.js";
 window.BiliComponents = Components;
 
 (async () => {
+  const isMainPage = location.href.includes("/index.html");
+
   // 加载 Vue 运行时
-  try {
-    await getVueRuntime();
-    console.log("[Renderer] Vue Runtime Loaded");
-  } catch (e) {
-    console.warn("[Renderer] Vue Runtime 加载失败:", e.message);
+  if (isMainPage) {
+    try {
+      await getVueRuntime();
+      console.log("[Renderer] Vue Runtime Loaded");
+    } catch (e) {
+      console.warn("[Renderer] Vue Runtime 加载失败:", e.message);
+    }
   }
 
   // 初始化插件 Renderer
@@ -21,7 +25,7 @@ window.BiliComponents = Components;
   await loader.initialize();
 
   // 主界面：显示通知和设置页
-  if (location.href.includes("/index.html")) {
+  if (isMainPage) {
     await new Notification({
       title: "BiliLoader",
       content: `已激活 BiliLoader，共加载 ${Object.keys(BiliLoader.plugins).length} 个插件`,

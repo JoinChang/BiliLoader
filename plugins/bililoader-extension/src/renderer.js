@@ -11,6 +11,7 @@ const config = new window.BiliConfigManager("bililoader-extension", {
   "hide-sidebar-pages": [],
   "hide-sidebar-buttons": [],
   "hide-home-tabs": [],
+  "clean-share-url": false,
 });
 
 async function setConfig(key, value, options = {}) {
@@ -22,7 +23,6 @@ async function setConfig(key, value, options = {}) {
     }).show();
   }
 }
-
 
 // 不可隐藏的侧边栏项
 const SIDEBAR_PAGE_EXCLUDE = ["首页"];
@@ -95,6 +95,41 @@ function applyHomeTabFilter() {
   }
 }
 
+const TRACKING_PARAMS = ["vd_source", "spm_id_from", "from_spmid", "from"];
+
+function cleanBiliUrl(text) {
+  return text.replace(/(https?:\/\/www\.bilibili\.com\/video\/[^\s?]+)\?([^\s]*)/g, (match, base, query) => {
+    const params = new URLSearchParams(query);
+    TRACKING_PARAMS.forEach(p => params.delete(p));
+    const cleaned = params.toString();
+    return cleaned ? `${base}?${cleaned}` : base;
+  });
+}
+
+function hookShareCleanup() {
+  const origExecCommand = document.execCommand.bind(document);
+  document.execCommand = function (cmd, ...args) {
+    if (cmd === "copy") {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) {
+        const text = sel.toString();
+        const cleaned = cleanBiliUrl(text);
+        if (cleaned !== text) {
+          const tmp = document.createElement("span");
+          tmp.style.cssText = "position:fixed;left:-9999px;";
+          tmp.textContent = cleaned;
+          document.body.appendChild(tmp);
+          sel.selectAllChildren(tmp);
+          const result = origExecCommand(cmd, ...args);
+          tmp.remove();
+          return result;
+        }
+      }
+    }
+    return origExecCommand(cmd, ...args);
+  };
+}
+
 function onBvidFound(element) {
   const bv = element.innerText;
   const av = dec(bv);
@@ -148,6 +183,10 @@ export const onPageLoaded = async (url) => {
   }
 
   if (url.includes("/player.html")) {
+    if (config.get("clean-share-url")) {
+      hookShareCleanup();
+    }
+
     if (config.get("bv2av")) {
       const observer = new MutationObserver(() => {
         const bvSpan = document.querySelector("span.item.bvid");
@@ -252,7 +291,15 @@ export const onSettingsPageLoaded = (view) => {
           await setConfig("bv2av", value);
         },
         margin: { marginTop: Margin.MD },
-      })
+      }),
+      new Checkbox({
+        label: "去除分享链接跟踪参数",
+        defaultValue: config.get("clean-share-url"),
+        onChange: async (value) => {
+          await setConfig("clean-share-url", value);
+        },
+        margin: { marginTop: Margin.XS },
+      }),
     ]
   });
 

@@ -159,8 +159,21 @@ export async function getVueRuntime() {
       ? VUE_CDN_TEMPLATE.replace("VERSION", pageVersion)
       : VUE_CDN_FALLBACK;
 
+    async function loadCdnVue() {
+      const cacheKey = `bl-vue-cdn-${pageVersion || "3.2.37"}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const blob = new Blob([cached], { type: "text/javascript" });
+        return import(URL.createObjectURL(blob));
+      }
+      const text = await fetch(cdnURL).catch(() => fetch(VUE_CDN_FALLBACK)).then(r => r.text());
+      try { localStorage.setItem(cacheKey, text); } catch {}
+      const blob = new Blob([text], { type: "text/javascript" });
+      return import(URL.createObjectURL(blob));
+    }
+
     const [cdnVue, source, pageMod] = await Promise.all([
-      import(cdnURL).catch(() => import(VUE_CDN_FALLBACK)),
+      loadCdnVue(),
       fetch(chunk.url).then(r => r.text()),
       import(chunk.url),
     ]);
