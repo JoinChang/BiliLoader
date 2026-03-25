@@ -3,13 +3,18 @@ const fs = require("fs");
 const path = require("path");
 const os = require("os");
 
-// 读取配置，在初始化前开启远程调试端口
 let profilePath = process.env["BILILOADER_PROFILE"];
 if (!profilePath) {
   profilePath = process.platform === "win32"
     ? path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "BiliLoader")
     : path.join(os.homedir(), ".config", "BiliLoader");
 }
+
+// 检查并应用待处理的更新
+const { applyPendingUpdate } = require("./init/updater.js");
+const homePath = path.resolve(__dirname, "../..");
+applyPendingUpdate(profilePath, homePath);
+
 try {
   const configPath = path.join(profilePath, "config.json");
   if (fs.existsSync(configPath)) {
@@ -35,7 +40,7 @@ require("./plugin_loader/manifest.js");
 // 注入 BrowserWindow hook 和 Preload
 require("./hooks/window.js");
 
-// 主进程调试服务（供 MCP Server 使用）
+// 主进程调试服务
 try {
   const configPath = path.join(profilePath, "config.json");
   const config = fs.existsSync(configPath) ? JSON.parse(fs.readFileSync(configPath, "utf-8")) : {};
@@ -67,6 +72,6 @@ try {
   // 启动失败不影响客户端
 }
 
-// 打开主程序（加载原始入口，避免循环引用）
+// 打开主程序
 log("正在启动客户端...");
 require(require("path").join(process.resourcesPath, "app.asar", "_index.js"));

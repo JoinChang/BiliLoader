@@ -1,7 +1,8 @@
 import {
-  BaseComponent, Button, Checkbox, ConfirmDialog, FlexRow, Margin, Tabs, Text, Title
+  BaseComponent, Checkbox, Margin, Tabs, Title
 } from "../components/index.js";
 import { ConfigManager } from "../utils/config.js";
+import { createAboutSection } from "./AboutSection.js";
 
 const PluginConfigPanel = {
   props: {
@@ -34,9 +35,7 @@ export class PluginConfigView {
   constructor(config) {
     this.config = config;
     this.settings_wrapper = null;
-    this.settings_items = Vue.reactive([
-      // { name: "BiliLoader", className: "", children: [...] }
-    ]);
+    this.settings_items = Vue.reactive([]);
   }
 
   static async createInstance() {
@@ -63,7 +62,7 @@ export class PluginConfigView {
     this.initializeSettingsWrapper();
     this.renderSettingsWrapper();
     this._renderPluginSettings();
-    this._renderAboutSection();
+    createAboutSection(this);
   }
 
   injectStyle() {
@@ -93,7 +92,7 @@ export class PluginConfigView {
         }
       },
     }).renderVNode();
-    vnode.appContext = app.__vue_app__._context; // Tabs 需要页面 VUI 组件上下文
+    vnode.appContext = app.__vue_app__._context;
 
     const tabs_wrapper = document.querySelector(".header_slot>div");
     tabs_wrapper.innerHTML = "";
@@ -102,9 +101,7 @@ export class PluginConfigView {
 
   renderSettingsWrapper() {
     const { h, render } = Vue;
-
     const vnode = h(PluginConfigPanel, { items: this.settings_items });
-
     render(vnode, this.settings_wrapper);
   }
 
@@ -130,55 +127,8 @@ export class PluginConfigView {
           defaultValue: this.config.get("enableMcpServer"),
           onChange: (value) => this.config.set("enableMcpServer", value, { restart: true }),
           margin: { marginTop: Margin.XS },
-        })
-      ]
-    });
-  }
-
-  _renderAboutSection() {
-    this.createSettingsItem({
-      name: "关于 BiliLoader",
-      className: "bl-about-item",
-      children: [
-        new Text({
-          text: `BiliLoader 版本：${BiliLoader.versions.bili_loader}`,
-          fontSize: 5,
         }),
-        new Text({
-          text: `Node 版本：${BiliLoader.versions.node}`,
-          fontSize: 5,
-          margin: { marginTop: Margin.XS },
-        }),
-        new Text({
-          text: `Chromium 版本：${BiliLoader.versions.chrome}`,
-          fontSize: 5,
-          margin: { marginTop: Margin.XS },
-        }),
-        new Text({
-          text: `Electron 版本：${BiliLoader.versions.electron}`,
-          fontSize: 5,
-          margin: { marginTop: Margin.XS },
-        }),
-        new FlexRow({
-          children: [
-            new Button({
-              text: "打开配置目录",
-              onClick: async () => {
-                await BiliLoader.api.openExternal(BiliLoader.path.profile);
-              },
-            }),
-            new Button({
-              text: "检查更新",
-              onClick: async () => {
-                await new ConfirmDialog({
-                  title: "提示",
-                  content: "检查更新功能尚未实现",
-                }).show();
-              }
-            }),
-          ],
-        })
-      ]
+      ],
     });
   }
 

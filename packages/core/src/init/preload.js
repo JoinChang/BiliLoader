@@ -14,6 +14,7 @@ Object.defineProperty(globalThis, "BiliLoader", {
       openExternal: (...args) => invokeAPI("openExternal", args),
       openFolder: (...args) => invokeAPI("openFolder", args),
       relaunch: () => invokeAPI("relaunch", []),
+      updateBiliLoader: (...args) => invokeAPI("updateBiliLoader", args),
       setCache: (...args) => invokeAPI("setCache", args),
       getCache: (...args) => invokeAPI("getCache", args),
     },
