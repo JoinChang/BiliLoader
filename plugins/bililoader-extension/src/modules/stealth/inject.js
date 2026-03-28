@@ -1,5 +1,10 @@
 (function () {
   if (window.__bililoader_stealth) return;
+
+  // 检查配置是否启用
+  var pluginConfig = (window.__bililoader_pluginConfig__ && window.__bililoader_pluginConfig__["bililoader-extension"]) || {};
+  if (!pluginConfig["stealth-live"]) return;
+
   window.__bililoader_stealth = true;
 
   // 用户缓存
