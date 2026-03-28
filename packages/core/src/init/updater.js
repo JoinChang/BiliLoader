@@ -18,10 +18,12 @@ function download(url, dest, redirects = 0) {
   return new Promise((resolve, reject) => {
     https.get(url, { headers: { "User-Agent": "BiliLoader" } }, (res) => {
       if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        validateUrl(res.headers.location);
         return download(res.headers.location, dest, redirects + 1).then(resolve, reject);
       }
       if (res.statusCode !== 200) return reject(new Error(`HTTP ${res.statusCode}`));
       const file = fs.createWriteStream(dest);
+      res.on("error", reject);
       res.pipe(file);
       file.on("finish", () => file.close(resolve));
       file.on("error", reject);
@@ -77,6 +79,22 @@ async function updateBiliLoader(zipUrl) {
   const extractDir = path.join(tmpDir, "extracted");
   fs.mkdirSync(extractDir, { recursive: true });
   extractZip(zipPath, extractDir);
+
+  // 校验解压结果：确保所有文件都在 extractDir 内
+  function validateExtracted(dir) {
+    const resolved = path.resolve(dir);
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const entryPath = path.resolve(dir, entry.name);
+      if (!entryPath.startsWith(resolved + path.sep)) {
+        throw new Error(`解压文件路径不合法: ${entryPath}`);
+      }
+      if (entry.isSymbolicLink()) {
+        throw new Error(`不允许的符号链接: ${entryPath}`);
+      }
+      if (entry.isDirectory()) validateExtracted(entryPath);
+    }
+  }
+  validateExtracted(extractDir);
 
   // GitHub zip 解压后有一层目录 (BiliLoader-tag/)
   const entries = fs.readdirSync(extractDir);

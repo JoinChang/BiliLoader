@@ -48,7 +48,8 @@ export class PluginConfigView {
     await config.load();
 
     const view = new PluginConfigView(config);
-    if (document.getElementsByClassName("vui_tabs--nav-item").length > 1) {
+    const headerSlot = document.querySelector(".header_slot");
+    if (headerSlot && headerSlot.querySelectorAll(".vui_tabs--nav-item").length > 1) {
       return null;
     }
 

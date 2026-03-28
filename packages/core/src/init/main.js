@@ -1,22 +1,16 @@
 const electron = require("electron");
 const log = require("electron-log");
 const path = require("path");
-const os = require("os");
 const pkg = require("../../package.json");
 
 const { ensureDirectories, readConfig, writeConfig } = require("./config.js");
 const { updateBiliLoader } = require("./updater.js");
+const { getProfilePath } = require("./paths.js");
 
 // 路径
 const CORE_DIR = path.resolve(__dirname, "../..");
 const BILILOADER_ROOT = path.resolve(CORE_DIR, "../..");
-
-let BILILOADER_PROFILE = process.env["BILILOADER_PROFILE"];
-if (!BILILOADER_PROFILE) {
-  BILILOADER_PROFILE = process.platform === "win32"
-    ? path.join(process.env.APPDATA || path.join(os.homedir(), "AppData", "Roaming"), "BiliLoader")
-    : path.join(os.homedir(), ".config", "BiliLoader");
-}
+const BILILOADER_PROFILE = getProfilePath();
 
 // 通用缓存
 const _cache = new Map();
@@ -68,10 +62,32 @@ globalThis.BiliLoader = BiliLoader;
 const { ipcMain } = require("electron");
 
 ipcMain.on("BiliLoader.BiliLoader.BiliLoader", (event) => {
-  event.returnValue = { ...BiliLoader, api: void null };
+  const { api, ...safeObj } = BiliLoader;
+  event.returnValue = safeObj;
 });
 
+ipcMain.on("BiliLoader.readPluginConfig", (event, pluginId) => {
+  event.returnValue = readConfig(pluginId);
+});
+
+// API 方法白名单
+const API_WHITELIST = new Set([
+  "readConfig", "writeConfig", "openExternal", "openFolder",
+  "relaunch", "updateBiliLoader", "setCache", "getCache",
+]);
+
 ipcMain.handle("BiliLoader.BiliLoader.api", async (event, method, args) => {
+  if (!API_WHITELIST.has(method)) {
+    throw new Error(`不允许的 API 方法: ${method}`);
+  }
+  if (method === "writeConfig") {
+    const targetId = args[0];
+    const isFrameworkConfig = targetId === "" || targetId === null || targetId === undefined;
+    const isRegisteredPlugin = targetId && BiliLoader.plugins[targetId];
+    if (!isFrameworkConfig && !isRegisteredPlugin) {
+      throw new Error("不允许写入未注册插件的配置");
+    }
+  }
   try {
     return await Promise.resolve(BiliLoader.api[method](...args));
   } catch (error) {

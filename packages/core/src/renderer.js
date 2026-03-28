@@ -4,8 +4,9 @@ import { Notification } from "./renderer/components/index.js";
 
 import { getVueRuntime } from "./renderer/utils/vueRuntime.js";
 import Components from "./renderer/components/index.js";
+import "./renderer/utils/assets.js";
 
-window.BiliComponents = Components;
+window.BiliComponents = Object.freeze(Components);
 
 (async () => {
   const isMainPage = location.href.includes("/index.html");
@@ -31,8 +32,14 @@ window.BiliComponents = Components;
       content: `已激活 BiliLoader，共加载 ${Object.keys(BiliLoader.plugins).length} 个插件`,
     }).show();
 
+    let lastUrl = location.href;
+
     navigation.addEventListener("navigatesuccess", async (event) => {
       const url = event.target.currentEntry.url;
+      if (url === lastUrl) return;
+
+      await loader.onPageUnloaded(lastUrl);
+      lastUrl = url;
       await loader.onPageLoaded(url);
 
       if (url.includes("#/page/settings")) {
@@ -42,6 +49,6 @@ window.BiliComponents = Components;
     });
   }
 
-  // 所有页面都触发 onPageLoaded
+  // 所有页面都触发初始 onPageLoaded
   await loader.onPageLoaded(location.href);
 })();

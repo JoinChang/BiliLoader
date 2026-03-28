@@ -6,39 +6,39 @@ document.addEventListener("DOMContentLoaded", () => {
   document.head.prepend(script);
 });
 
-// 运行外部脚本
+// 框架内部脚本执行
 Object.defineProperty(globalThis, "runPreloadScript", {
   configurable: false,
   value: (content) => {
     const fn = new Function(
-      "require",
-      "process",
-      "Buffer",
-      "global",
-      "setImmediate",
-      "clearImmediate",
-      "exports",
-      "module",
+      "require", "process", "Buffer", "global",
+      "setImmediate", "clearImmediate", "exports", "module",
       content
     );
-
     const exports = {};
     const module = { exports };
-
-    return fn(
-      require,
-      process,
-      Buffer,
-      globalThis,
-      setImmediate,
-      clearImmediate,
-      exports,
-      module
-    );
+    return fn(require, process, Buffer, globalThis, setImmediate, clearImmediate, exports, module);
   }
 });
 
-// 加载插件 Preload
+// 插件 preload 脚本执行
+const { contextBridge, webFrame, ipcRenderer } = require("electron");
+Object.defineProperty(globalThis, "runPluginPreloadScript", {
+  configurable: false,
+  value: (content) => {
+    const fn = new Function(
+      "contextBridge", "webFrame", "ipcRenderer",
+      "BiliLoader",
+      "exports", "module",
+      content
+    );
+    const exports = {};
+    const module = { exports };
+    return fn(contextBridge, webFrame, ipcRenderer, globalThis.BiliLoader, exports, module);
+  }
+});
+
+// 加载框架 Preload（完整权限）
 (async () => {
   runPreloadScript(await (await fetch(`local://root/src/init/preload.js`)).text());
   runPreloadScript(await (await fetch(`local://root/src/plugin_loader/preload.js`)).text());

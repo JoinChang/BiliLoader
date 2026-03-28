@@ -22,6 +22,17 @@ protocol.registerSchemesAsPrivileged([
   }
 ]);
 
+/**
+ * 校验解析后的路径是否在基目录内，防止路径穿越
+ */
+function safePath(baseDir, filePath) {
+  const resolved = path.resolve(baseDir, filePath);
+  if (!resolved.startsWith(path.resolve(baseDir) + path.sep) && resolved !== path.resolve(baseDir)) {
+    return null;
+  }
+  return resolved;
+}
+
 exports.protocolRegister = (protocol) => {
   const intercepted = protocol.isProtocolIntercepted("local");
 
@@ -30,20 +41,44 @@ exports.protocolRegister = (protocol) => {
       const { host, pathname } = new URL(decodeURI(req.url));
       const filepath = path.normalize(pathname.slice(1));
 
-      let fullPath;
+      let fullPath = null;
       switch (host) {
         case "root":
-          fullPath = path.join(BiliLoader.path.root, filepath);
+          fullPath = safePath(BiliLoader.path.root, filepath);
           break;
         case "profile":
-          fullPath = path.join(BiliLoader.path.profile, filepath);
+          fullPath = safePath(BiliLoader.path.profile, filepath);
           break;
+        case "plugin": {
+          const parts = filepath.split(path.sep);
+          const pluginId = parts[0];
+          const assetPath = parts.slice(1).join(path.sep);
+          const plugin = BiliLoader.plugins?.[pluginId];
+          const assetsDir = plugin?.path?.assets;
+          if (assetsDir) {
+            fullPath = safePath(assetsDir, assetPath);
+          }
+          break;
+        }
         default:
-          fullPath = path.join(host, filepath);
+          if (host) {
+            fullPath = safePath(path.join(app.getPath("userData"), host), filepath);
+          } else {
+            // 空 host = 绝对路径（插件 renderer 等），校验是否在允许的目录内
+            const resolved = path.resolve(filepath);
+            const allowed = [BiliLoader.path.root, BiliLoader.path.profile, BiliLoader.path.plugins, BiliLoader.path.builtinPlugins];
+            if (allowed.some(dir => resolved.startsWith(path.resolve(dir) + path.sep))) {
+              fullPath = resolved;
+            }
+          }
           break;
       }
 
-      callback({ path: fullPath });
+      if (fullPath) {
+        callback({ path: fullPath });
+      } else {
+        callback({ error: -6 }); // FILE_NOT_FOUND
+      }
     });
   }
 };

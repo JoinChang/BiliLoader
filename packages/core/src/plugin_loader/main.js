@@ -11,10 +11,8 @@ exports.PluginMainLoader = class {
 
     for (const pluginId in plugins) {
       const plugin = plugins[pluginId];
-      const mainFile = plugin.manifest?.injects?.main;
-      if (!mainFile) continue;
-
-      const mainPath = path.join(plugin.path.plugin, mainFile);
+      const mainPath = plugin.path?.injects?.main;
+      if (!mainPath) continue;
 
       try {
         const exports = require(mainPath);
@@ -29,12 +27,19 @@ exports.PluginMainLoader = class {
     }
   }
 
+  _getContext(pluginId) {
+    return {
+      pluginId,
+      readConfig: () => BiliLoader.api.readConfig(pluginId),
+    };
+  }
+
   onBrowserWindowCreated(window) {
     for (const pluginId in this.pluginExports) {
       const plugin = this.pluginExports[pluginId];
       if (typeof plugin.onBrowserWindowCreated === "function") {
         try {
-          plugin.onBrowserWindowCreated(window);
+          plugin.onBrowserWindowCreated(window, this._getContext(pluginId));
         } catch (e) {
           log.error(`[BiliLoader] 插件 ${pluginId} 的 onBrowserWindowCreated 执行出错：`, e);
         }
