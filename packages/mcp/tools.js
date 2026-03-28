@@ -58,6 +58,11 @@ const TOOLS = [
   { name: "screenshot", description: "截取当前页面截图", inputSchema: { type: "object", properties: {
     fullPage: { type: "boolean", description: "是否截取整个页面(包括滚动区域),默认 false" },
   }}},
+  { name: "reload_page", description: "重载当前连接的页面", inputSchema: { type: "object", properties: {} } },
+  { name: "inject_css", description: "向当前页面注入临时 CSS 样式,用于实时调试。再次调用会覆盖之前注入的样式", inputSchema: { type: "object", properties: {
+    css: { type: "string", description: "要注入的 CSS 内容" },
+    remove: { type: "boolean", description: "传 true 移除之前注入的 CSS" },
+  }}},
   { name: "reload_iframe", description: "刷新当前页面中的 iframe(直播间等页面内容在 iframe 中)", inputSchema: { type: "object", properties: {} } },
 
   // 直播弹幕
@@ -80,7 +85,9 @@ async function executeTool(ctx, name, args = {}) {
     case "execute_js":          return await page.handleExecuteJs(cdp, args);
     case "navigate":            return await page.handleNavigate(cdp, args);
     case "screenshot":          return await page.handleScreenshot(cdp, args);
-    case "reload_iframe":       return await page.handleReloadIframe(cdp);
+    case "reload_page":          return await page.handleReloadPage(cdp);
+    case "inject_css":           return await page.handleInjectCss(cdp, args);
+    case "reload_iframe":        return await page.handleReloadIframe(cdp);
     case "execute_main_js":     return await mainProcess.handleExecuteMainJs(args);
     case "get_network_log":     return await network.handleGetNetworkLog(cdp, args);
     case "get_request_detail":  return await network.handleGetRequestDetail(cdp, args);

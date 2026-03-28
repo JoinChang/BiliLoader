@@ -19,7 +19,11 @@ function wrapIframe(expression) {
 }
 
 async function evaluate(cdp, expression, { iframe = false, awaitPromise = false, returnByValue = true } = {}) {
-  const expr = iframe ? wrapIframe(expression) : expression;
+  let expr = iframe ? wrapIframe(expression) : expression;
+  // 自动包装 async：如果表达式包含 await 关键字，包裹为 async IIFE
+  if (awaitPromise && expr.includes('await') && !expr.trimStart().startsWith('(async')) {
+    expr = `(async () => { ${expr} })()`;
+  }
   const result = await cdp.send("Runtime.evaluate", {
     expression: expr,
     returnByValue,

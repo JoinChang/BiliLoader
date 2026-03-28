@@ -102,6 +102,48 @@ async function handleScreenshot(cdp, { fullPage = false }) {
   return image(result.data);
 }
 
+async function handleReloadPage(cdp) {
+  await cdp.send("Page.enable");
+  const loaded = new Promise(resolve => {
+    const handler = cdp._handleEvent.bind(cdp);
+    const orig = cdp._handleEvent;
+    cdp._handleEvent = function (method, params) {
+      orig.call(this, method, params);
+      if (method === "Page.loadEventFired") {
+        cdp._handleEvent = orig;
+        resolve();
+      }
+    };
+    // 超时兜底
+    setTimeout(() => { cdp._handleEvent = orig; resolve(); }, 10000);
+  });
+  await cdp.send("Page.reload");
+  await loaded;
+  return text("页面已重载");
+}
+
+async function handleInjectCss(cdp, { css, remove = false }) {
+  if (remove) {
+    await evaluate(cdp, `(() => {
+      const el = document.getElementById('__mcp-injected-css');
+      if (el) el.remove();
+      return 'removed';
+    })()`);
+    return text("已移除注入的 CSS");
+  }
+  if (!css) throw new Error("请传入 css 参数");
+  await evaluate(cdp, `(() => {
+    let el = document.getElementById('__mcp-injected-css');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = '__mcp-injected-css';
+      document.head.appendChild(el);
+    }
+    el.textContent = ${JSON.stringify(css)};
+  })()`);
+  return text("CSS 已注入");
+}
+
 async function handleReloadIframe(cdp) {
   const value = await evaluate(cdp, `(() => {
     const iframe = document.querySelector('iframe');
@@ -114,5 +156,6 @@ async function handleReloadIframe(cdp) {
 
 module.exports = {
   handleListPages, handleConnectPage, handleQueryDom,
-  handleExecuteJs, handleNavigate, handleScreenshot, handleReloadIframe,
+  handleExecuteJs, handleNavigate, handleScreenshot,
+  handleReloadPage, handleInjectCss, handleReloadIframe,
 };
