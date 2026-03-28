@@ -11,6 +11,99 @@
         color: var(--v_brand_pink) !important;
     }
 
+    .bl-text-input .vui_input {
+        width: 100%;
+    }
+
+    .bl-pill-group {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0;
+    }
+
+    .bl-pill-group:empty {
+        display: none;
+    }
+
+    .bl-pill {
+        position: relative;
+        box-sizing: border-box;
+        height: 30px;
+        padding: 7px 10px 8px;
+        font-size: 12px;
+        line-height: 15px;
+        background: var(--graph_bg_thin);
+        border-radius: 4px;
+        margin-right: 10px;
+        margin-bottom: 10px;
+        cursor: pointer;
+    }
+
+    .bl-pill:hover {
+        color: var(--brand_pink);
+    }
+
+    .bl-pill--text {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
+    }
+
+    .bl-pill--close {
+        display: none;
+        box-sizing: border-box;
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        top: -6px;
+        right: -6px;
+        padding: 2px;
+        cursor: pointer;
+    }
+
+    .bl-pill--close svg {
+        width: 14px;
+        height: 14px;
+        fill: #ccc;
+    }
+
+    .bl-pill:hover .bl-pill--close {
+        display: block;
+    }
+
+    .bl-spoiler--toggle {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 64px;
+        margin: 0 auto;
+        cursor: pointer;
+    }
+
+    .bl-spoiler--text {
+        font-size: 12px;
+        line-height: 15px;
+        height: 15px;
+        color: var(--text3);
+    }
+
+    .bl-spoiler--icon {
+        width: 12px;
+        height: 12px;
+        fill: var(--text3);
+        margin-left: 2px;
+        transition: transform 0.2s ease;
+    }
+
+    .bl-spoiler--toggle:hover .bl-spoiler--text {
+        color: var(--brand_blue);
+    }
+
+    .bl-spoiler--toggle:hover .bl-spoiler--icon {
+        fill: var(--brand_blue);
+    }
+
     .bl-tooltip-help::after {
         content: "";
         position: absolute;

@@ -4,6 +4,7 @@ export class ConfigManager {
     this.defaults = defaults;
     this.config = { ...defaults };
     this.loaded = false;
+    this._listeners = [];
   }
 
   async load() {
@@ -15,6 +16,7 @@ export class ConfigManager {
         this.config = { ...this.defaults };
       }
       this.loaded = true;
+      this._syncToPageWorld();
     } catch (e) {
       this.config = { ...this.defaults };
     }
@@ -31,8 +33,21 @@ export class ConfigManager {
     if (!this.loaded) {
       throw new Error("配置尚未加载");
     }
+    const oldValue = this.config[key];
     this.config[key] = value;
     const result = await BiliLoader.api.writeConfig(this.pluginId, this.config);
+    if (result) {
+      this._syncToPageWorld();
+      this._listeners.forEach(fn => fn(key, value));
+    } else {
+      this.config[key] = oldValue; // 回滚
+      const { ConfirmDialog } = await import("../components/index.js");
+      new ConfirmDialog({
+        title: "错误",
+        content: "设置保存失败，请检查是否有权限修改配置文件",
+      }).show();
+      return false;
+    }
     if (options.restart) {
       const { ConfirmDialog } = await import("../components/index.js");
       await new ConfirmDialog({
@@ -45,6 +60,19 @@ export class ConfigManager {
     }
     return result;
   }
+
+  _syncToPageWorld() {
+    if (!this.pluginId) return;
+    window.__bililoader_pluginConfig__ = window.__bililoader_pluginConfig__ || {};
+    window.__bililoader_pluginConfig__[this.pluginId] = { ...this.config };
+  }
+
+  onChange(listener) {
+    this._listeners.push(listener);
+    return () => {
+      this._listeners = this._listeners.filter(fn => fn !== listener);
+    };
+  }
 }
 
-window.BiliConfigManager = ConfigManager;
+Object.defineProperty(window, "BiliConfigManager", { value: ConfigManager, writable: false, configurable: false });
