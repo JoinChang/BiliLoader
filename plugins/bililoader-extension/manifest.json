@@ -5,9 +5,13 @@
   "name": "BiliLoader 附属插件",
   "version": "0.0.0",
   "description": "为哔哩哔哩 PC 客户端添加一些实用功能。",
+  "assets": "./assets",
   "injects": {
     "renderer": "./src/renderer.js",
     "main": "./src/main.js",
-    "preload": "./src/preload.js"
+    "pageScripts": [
+      "./src/modules/feed-filter/inject.js",
+      "./src/modules/stealth/inject.js"
+    ]
   }
 }
