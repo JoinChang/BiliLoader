@@ -17,6 +17,7 @@ import { Tabs } from "./Tabs.js";
 import { Text } from "./Text.js";
 import { Title } from "./Title.js";
 import { TextInput, TextInputSize } from "./TextInput.js";
+import { Toast } from "./Toast.js";
 import { Tooltip } from "./Tooltip.js";
 
 const Components = {
@@ -25,7 +26,7 @@ const Components = {
   ConfirmDialog, ContentDialog, FlexRow, Margin,
   Notification, NotificationPosition, Pill, PillGroup,
   Radio, RadioGroup, Spoiler, Tabs, Text, TextInput, TextInputSize,
-  Title, Tooltip,
+  Title, Toast, Tooltip,
 };
 
 export {
@@ -34,7 +35,7 @@ export {
   ConfirmDialog, ContentDialog, FlexRow, Margin,
   Notification, NotificationPosition, Pill, PillGroup,
   Radio, RadioGroup, Spoiler, Tabs, Text, TextInput, TextInputSize,
-  Title, Tooltip,
+  Title, Toast, Tooltip,
 };
 
 export default Components;
