@@ -4,6 +4,7 @@ import { showAdvancedFilterDialog } from './modules/feed-filter/dialog.js';
 import { installContextMenu } from './modules/feed-filter/menu.js';
 
 export const configDefaults = {
+  "fall-asleep-time": 900000,
   "filter-ad": false,
   "filter-rocket-ad": false,
   "bv2av": false,
@@ -211,7 +212,27 @@ export const onPageUnloaded = () => {
 // 设置页面加载时触发
 export const onSettingsPageLoaded = async (view) => {
   const rocketSvg = await assets.text("rocket.svg");
-  const { Button, Checkbox, CheckboxGroup, FlexRow, Margin, Tooltip } = window.BiliComponents;
+  const { Button, Checkbox, CheckboxGroup, Select, FlexRow, Margin, Tooltip } = window.BiliComponents;
+
+  view.createSettingsItem({
+    name: "通用",
+    className: "bl-general-item",
+    children: [
+      new Select({
+        label: "客户端自动休眠时间",
+        defaultValue: config.get("fall-asleep-time"),
+        options: [
+          { label: "15 分钟（默认）", value: 900000 },
+          { label: "30 分钟", value: 1800000 },
+          { label: "1 小时", value: 3600000 },
+          { label: "3 小时", value: 10800000 },
+          { label: "永不", value: 0 },
+        ],
+        onChange: (value) => config.set("fall-asleep-time", value, { restart: true }),
+        margin: { marginTop: Margin.MD },
+      }),
+    ],
+  });
 
   view.createSettingsItem({
     name: "首页",

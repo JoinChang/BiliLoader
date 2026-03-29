@@ -6,6 +6,7 @@ import { Button, ButtonColor, ButtonSize } from "./Button.js";
 import { Checkbox, CheckboxColor, CheckboxSize } from "./Checkbox.js";
 import { CheckboxGroup } from "./CheckboxGroup.js";
 import { ConfirmDialog, ContentDialog } from "./Dialog.js";
+import { Select } from "./Select.js";
 import { Pill } from "./Pill.js";
 import { PillGroup } from "./PillGroup.js";
 import { FlexRow } from "./Flex.js";
@@ -23,7 +24,7 @@ import { Tooltip } from "./Tooltip.js";
 const Components = {
   BaseComponent, Button, ButtonColor, ButtonSize,
   Checkbox, CheckboxColor, CheckboxGroup, CheckboxSize,
-  ConfirmDialog, ContentDialog, FlexRow, Margin,
+  ConfirmDialog, ContentDialog, Select, FlexRow, Margin,
   Notification, NotificationPosition, Pill, PillGroup,
   Radio, RadioGroup, Spoiler, Tabs, Text, TextInput, TextInputSize,
   Title, Toast, Tooltip,
@@ -32,7 +33,7 @@ const Components = {
 export {
   BaseComponent, Button, ButtonColor, ButtonSize,
   Checkbox, CheckboxColor, CheckboxGroup, CheckboxSize,
-  ConfirmDialog, ContentDialog, FlexRow, Margin,
+  ConfirmDialog, ContentDialog, Select, FlexRow, Margin,
   Notification, NotificationPosition, Pill, PillGroup,
   Radio, RadioGroup, Spoiler, Tabs, Text, TextInput, TextInputSize,
   Title, Toast, Tooltip,

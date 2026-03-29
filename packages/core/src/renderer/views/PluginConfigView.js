@@ -98,6 +98,13 @@ export class PluginConfigView {
     const tabs_wrapper = document.querySelector(".header_slot>div");
     tabs_wrapper.innerHTML = "";
     render(vnode, tabs_wrapper);
+
+    // VTabs 的 indicator 位置依赖 DOM layout，需要等渲染完成后触发重算
+    Vue.nextTick(() => {
+      requestAnimationFrame(() => {
+        window.dispatchEvent(new Event("resize"));
+      });
+    });
   }
 
   renderSettingsWrapper() {
@@ -118,7 +125,7 @@ export class PluginConfigView {
           margin: { marginTop: Margin.MD },
         }),
         new Checkbox({
-          label: "禁用 App 自动更新",
+          label: "禁用客户端自动更新",
           defaultValue: this.config.get("blockAppUpdate"),
           onChange: (value) => this.config.set("blockAppUpdate", value, { restart: true }),
           margin: { marginTop: Margin.XS },
@@ -131,6 +138,7 @@ export class PluginConfigView {
         }),
       ],
     });
+
   }
 
   initializeSettingsWrapper() {
