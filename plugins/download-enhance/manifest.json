@@ -1,0 +1,13 @@
+{
+  "manifest_version": 1,
+  "id": "download-enhance",
+  "type": "extension",
+  "name": "下载增强",
+  "version": "1.0.0",
+  "description": "解锁同时下载视频个数限制。",
+  "injects": {
+    "pageScripts": [
+      "src/inject.js"
+    ]
+  }
+}

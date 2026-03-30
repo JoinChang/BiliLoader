@@ -1,0 +1,14 @@
+{
+  "manifest_version": 1,
+  "id": "account-switcher",
+  "type": "extension",
+  "name": "账号切换",
+  "version": "1.0.0",
+  "description": "在哔哩哔哩 PC 客户端中切换多个登录账号。",
+  "assets": "./assets",
+  "injects": {
+    "renderer": "./src/renderer.js",
+    "main": "./src/main.js",
+    "preload": "./src/preload.js"
+  }
+}
