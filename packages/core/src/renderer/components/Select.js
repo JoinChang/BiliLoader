@@ -18,7 +18,7 @@ export class Select extends BaseComponent {
     super({ margin });
     this.value = Vue.ref(defaultValue);
 
-    const VSelect = app.__vue_app__.component("VSelect");
+    const VDropdown = app.__vue_app__.component("VDropdown");
 
     this._component = {
       setup: () => {
@@ -30,7 +30,7 @@ export class Select extends BaseComponent {
           return opt ? opt.label : String(selected.value);
         };
 
-        const buttonId = `bl-dropdown-${Date.now()}`;
+        const buttonId = `bl-select-${Date.now()}`;
 
         const updateButton = () => {
           const btn = document.getElementById(buttonId);
@@ -39,7 +39,7 @@ export class Select extends BaseComponent {
 
         return () => h("div", null, [
           label && h("p", { class: "b_text text2" }, label),
-          h(VSelect, {
+          h(VDropdown, {
             placement: "bottom-start",
             trigger: "click",
             clickHide: true,
