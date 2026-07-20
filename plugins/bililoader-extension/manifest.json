@@ -11,7 +11,8 @@
     "main": "./src/main.js",
     "pageScripts": [
       "./src/modules/feed-filter/inject.js",
-      "./src/modules/stealth/inject.js"
+      "./src/modules/stealth/inject.js",
+      "./src/modules/custom-cdn/inject.js"
     ]
   }
 }

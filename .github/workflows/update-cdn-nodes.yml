@@ -1,0 +1,33 @@
+name: Update CDN Nodes
+
+on:
+  schedule:
+    - cron: "0 20 * * 6"
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Scrape CDN nodes
+        run: node scripts/update-cdn-nodes.mjs
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          if git diff --quiet plugins/bililoader-extension/assets/cdn-nodes.json; then
+            echo "No changes to CDN nodes."
+          else
+            git add plugins/bililoader-extension/assets/cdn-nodes.json
+            git commit -m "chore: update CDN node snapshot"
+            git push
+          fi

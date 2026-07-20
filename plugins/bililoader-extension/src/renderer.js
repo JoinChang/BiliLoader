@@ -2,6 +2,7 @@
 import { dec } from './modules/bv2av/index.js';
 import { showAdvancedFilterDialog } from './modules/feed-filter/dialog.js';
 import { installContextMenu } from './modules/feed-filter/menu.js';
+import { getCdnNodes, filterNodesByType, findRegionOf } from './modules/custom-cdn/nodes.js';
 
 export const configDefaults = {
   "fall-asleep-time": 900000,
@@ -20,7 +21,98 @@ export const configDefaults = {
   "filter-uid": [],
   "filter-upname": [],
   "filter-upname-regex": false,
+  "custom-cdn-live": "",
+  "custom-cdn-video": "",
 };
+
+const REFRESH_ICON = '<title>刷新节点列表</title><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>';
+
+// CDN 线路选择
+function createCdnLineSelects({ label, tooltipText, allNodes, type, configKey, onRefresh }) {
+  const { Select, FlexRow, Margin, Tooltip } = window.BiliComponents;
+
+  const DEFAULT_NODE_OPTIONS = [{ label: "自动", value: "" }];
+  const state = { nodes: filterNodesByType(allNodes, type) };
+  const nodeOptionsOf = (region) => state.nodes[region].map(h => ({ label: h, value: h }));
+
+  const view = () => {
+    const current = config.get(configKey) || "";
+    const currentRegion = findRegionOf(state.nodes, current);
+    const isCustom = !!current && !currentRegion;
+    return {
+      current, currentRegion, isCustom,
+      regionValue: isCustom ? "__custom__" : (currentRegion || ""),
+      regionOptions: [
+        { label: "默认（自动分配）", value: "" },
+        ...Object.keys(state.nodes).map(r => ({ label: r, value: r })),
+        ...(isCustom ? [{ label: "自定义", value: "__custom__" }] : []),
+      ],
+      nodeOptions: isCustom ? [{ label: `自定义：${current}`, value: current }]
+        : currentRegion ? nodeOptionsOf(currentRegion)
+          : DEFAULT_NODE_OPTIONS,
+    };
+  };
+
+  const init = view();
+
+  const nodeSelect = new Select({
+    defaultValue: init.current,
+    options: init.nodeOptions,
+    onChange: (value) => config.set(configKey, value),
+    margin: { marginTop: Margin.NONE, marginLeft: Margin.SM },
+  });
+
+  const regionSelect = new Select({
+    defaultValue: init.regionValue,
+    options: init.regionOptions,
+    onChange: async (region) => {
+      if (region === "__custom__") return;
+      if (!region) {
+        nodeSelect.setOptions(DEFAULT_NODE_OPTIONS, "");
+        await config.set(configKey, "");
+      } else {
+        const options = nodeOptionsOf(region);
+        nodeSelect.setOptions(options, options[0].value);
+        await config.set(configKey, options[0].value);
+      }
+    },
+    margin: { marginTop: Margin.NONE },
+  });
+
+  const applyNodes = (newAllNodes) => {
+    state.nodes = filterNodesByType(newAllNodes, type);
+    const v = view();
+    regionSelect.setOptions(v.regionOptions, v.regionValue);
+    nodeSelect.setOptions(v.nodeOptions, v.current);
+  };
+
+  return {
+    components: [
+      Vue.h("div", { class: "flex_start", style: "align-items: center; margin-top: 15px;" }, [
+        Vue.h("p", { class: "b_text text2 fs_4", style: "margin: 0 6px 0 0;" }, label),
+        new Tooltip({ text: tooltipText, placement: "right" }).renderVNode(),
+      ]),
+      new FlexRow({
+        children: [
+          regionSelect,
+          nodeSelect,
+          Vue.h("svg", {
+            class: "bl-cdn-refresh text3 cs_pointer",
+            xmlns: "http://www.w3.org/2000/svg",
+            viewBox: "0 0 24 24",
+            width: "16",
+            height: "16",
+            style: "margin-left: 10px; align-self: flex-end; margin-bottom: 8px; transition: opacity .2s;",
+            innerHTML: REFRESH_ICON,
+            onClick: () => onRefresh(),
+          }),
+        ],
+        margin: { marginTop: Margin.NONE },
+      }),
+    ],
+    applyNodes,
+  };
+}
 
 let config = null;
 let assets = null;
@@ -212,7 +304,49 @@ export const onPageUnloaded = () => {
 // 设置页面加载时触发
 export const onSettingsPageLoaded = async (view) => {
   const rocketSvg = await assets.text("rocket.svg");
-  const { Button, Checkbox, CheckboxGroup, Select, FlexRow, Margin, Tooltip } = window.BiliComponents;
+  const cdnNodes = await getCdnNodes(assets);
+  const { Button, Checkbox, CheckboxGroup, Select, FlexRow, Margin, Tooltip, Toast } = window.BiliComponents;
+
+  // 视频与直播共用同一份节点数据
+  const cdnRefresh = { run: async () => {} };
+
+  const videoCdn = createCdnLineSelects({
+    label: "视频 CDN 线路",
+    tooltipText: "视频加载缓慢时，可切换到其他线路，切换后即时生效。",
+    allNodes: cdnNodes,
+    type: "video",
+    configKey: "custom-cdn-video",
+    onRefresh: () => cdnRefresh.run(),
+  });
+
+  const liveCdn = createCdnLineSelects({
+    label: "直播 CDN 线路",
+    tooltipText: "直播卡顿或无法加载时，可切换到其他线路，切换后即时生效。",
+    allNodes: cdnNodes,
+    type: "live",
+    configKey: "custom-cdn-live",
+    onRefresh: () => cdnRefresh.run(),
+  });
+
+  let cdnRefreshing = false;
+  cdnRefresh.run = async () => {
+    if (cdnRefreshing) return;
+    cdnRefreshing = true;
+    const icons = [...document.querySelectorAll(".bl-cdn-refresh")];
+    icons.forEach(i => { i.style.opacity = "0.4"; i.style.pointerEvents = "none"; });
+    try {
+      const fresh = await getCdnNodes(assets, { force: true });
+      videoCdn.applyNodes(fresh);
+      liveCdn.applyNodes(fresh);
+      const total = Object.values(fresh).reduce((s, a) => s + a.length, 0);
+      Toast.show({ content: total ? `节点列表已刷新（${total} 个节点）` : "刷新失败，请稍后重试" });
+    } catch {
+      Toast.show({ content: "刷新失败，请稍后重试" });
+    } finally {
+      icons.forEach(i => { i.style.opacity = ""; i.style.pointerEvents = ""; });
+      cdnRefreshing = false;
+    }
+  };
 
   view.createSettingsItem({
     name: "通用",
@@ -329,6 +463,7 @@ export const onSettingsPageLoaded = async (view) => {
         },
         margin: { marginTop: Margin.XS },
       }),
+      ...videoCdn.components,
     ]
   });
 
@@ -350,6 +485,7 @@ export const onSettingsPageLoaded = async (view) => {
         ],
         margin: { marginTop: Margin.MD },
       }),
+      ...liveCdn.components,
     ]
   });
 };

@@ -1,5 +1,6 @@
 const https = require("https");
 const { getWbiKeys, signWbi } = require("./wbi.js");
+const router = require("../web_request_router/main.js");
 
 const FAKE_ROOM_ID = "273022";
 
@@ -31,20 +32,21 @@ async function getAnonDanmuToken(roomId, session) {
   });
 }
 
+let heartbeatRuleAdded = false;
+
 exports.register = (window, isEnabled) => {
+  // 阻止心跳上报
+  if (!heartbeatRuleAdded) {
+    heartbeatRuleAdded = true;
+    router.addRule({
+      patterns: ["*://live-trace.bilibili.com/xlive/data-interface/v1/x25Kn/X*"],
+      handler: () => isEnabled() ? { redirectURL: "data:application/json,%7B%22code%22%3A0%7D" } : undefined,
+    });
+  }
+
   if (!isEnabled()) return;
 
   const winSession = window.webContents.session;
-
-  if (!winSession.__stealthRegistered) {
-    winSession.__stealthRegistered = true;
-
-    // 阻止心跳上报
-    winSession.webRequest.onBeforeRequest(
-      { urls: ["*://live-trace.bilibili.com/xlive/data-interface/v1/x25Kn/X*"] },
-      (_, callback) => { callback({ redirectURL: "data:application/json,%7B%22code%22%3A0%7D" }); }
-    );
-  }
 
   if (window.__stealthRegistered) return;
   window.__stealthRegistered = true;

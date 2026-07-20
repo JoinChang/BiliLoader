@@ -2,6 +2,8 @@ import { BaseComponent, Margin } from "./BaseComponent.js";
 
 const ARROW_ICON = '<path fill="none" stroke-linejoin="round" stroke-linecap="round" stroke-width="145.067" stroke="currentColor" d="m341.333 170.667 341.334 341.332-341.334 341.335"></path>';
 
+let selectIdCounter = 0;
+
 export class Select extends BaseComponent {
   constructor({
     label = "",
@@ -17,6 +19,7 @@ export class Select extends BaseComponent {
   }) {
     super({ margin });
     this.value = Vue.ref(defaultValue);
+    this._options = [...options];
 
     const VDropdown = app.__vue_app__.component("VDropdown");
 
@@ -25,17 +28,8 @@ export class Select extends BaseComponent {
         const { h } = Vue;
         const selected = this.value;
 
-        const getLabel = () => {
-          const opt = options.find(o => o.value === selected.value);
-          return opt ? opt.label : String(selected.value);
-        };
-
-        const buttonId = `bl-select-${Date.now()}`;
-
-        const updateButton = () => {
-          const btn = document.getElementById(buttonId);
-          if (btn) btn.firstChild.textContent = getLabel();
-        };
+        const buttonId = `bl-select-${++selectIdCounter}`;
+        this._buttonId = buttonId;
 
         return () => h("div", null, [
           label && h("p", { class: "b_text text2" }, label),
@@ -49,7 +43,7 @@ export class Select extends BaseComponent {
               id: buttonId,
               class: "vui_button dropdown_select--button mt_sm p_relative fs_4 text_ellipsis text_left",
             }, [
-              getLabel(),
+              this._getLabel(),
               h("svg", {
                 xmlns: "http://www.w3.org/2000/svg",
                 viewBox: "0 0 1024 1024",
@@ -59,7 +53,7 @@ export class Select extends BaseComponent {
             ]),
             content: () => h("div", {
               class: "dropdown_select--content settings-dropdown",
-            }, options.map((opt, i) =>
+            }, this._options.map((opt, i) =>
               h("div", {
                 class: [
                   "dropdown_select--option",
@@ -69,7 +63,7 @@ export class Select extends BaseComponent {
                 ],
                 onClick: () => {
                   selected.value = opt.value;
-                  updateButton();
+                  this._updateButton();
                   onChange(opt.value);
                 },
               }, [
@@ -80,5 +74,26 @@ export class Select extends BaseComponent {
         ]);
       },
     };
+  }
+
+  _getLabel() {
+    const opt = this._options.find(o => o.value === this.value.value);
+    return opt ? opt.label : String(this.value.value);
+  }
+
+  _updateButton() {
+    const btn = document.getElementById(this._buttonId);
+    if (btn) btn.firstChild.textContent = this._getLabel();
+  }
+
+  setOptions(options, value) {
+    this._options = [...options];
+    if (value !== undefined) this.setValue(value);
+    else this._updateButton();
+  }
+
+  setValue(value) {
+    this.value.value = value;
+    this._updateButton();
   }
 }
