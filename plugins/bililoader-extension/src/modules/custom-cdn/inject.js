@@ -1,10 +1,19 @@
-// 点播 CDN 线路
+// 点播 / 番剧 / 课堂 CDN 线路：改写 playurl 接口响应里的媒体 host，播放器直接向新节点请求
+// （不用 webRequest 重定向：DASH 分片是 CORS fetch，跨域重定向会被浏览器拦截）
 (function () {
   if (window.__bililoader_customCdn) return;
   window.__bililoader_customCdn = true;
 
   var PLUGIN_ID = 'bililoader-extension';
-  var PLAYURL_API = '/x/player/wbi/playurl';
+  // 视频(UGC) / 番剧影视(PGC) / 课堂(PUGV) / OGV 的 playurl 接口
+  var PLAYURL_PATHS = [
+    '/x/player/wbi/playurl', '/x/player/playurl',
+    '/pgc/player/web/playurl', '/pgc/player/web/v2/playurl', '/pgc/player/api/playurl',
+    '/pugv/player/web/playurl', '/ogv/player/playview',
+  ];
+
+  var MEDIA_RE = /(?:bilivideo|acgvideo)\.(?:com|cn)|edge\.mountaintoys\.cn|akamaized\.net/;
+  var IGNORE_HOST_RE = /^(?:bvc|data|pbp|api)/;
 
   function targetHost() {
     var c = (window.__bililoader_pluginConfig__ && window.__bililoader_pluginConfig__[PLUGIN_ID]) || {};
@@ -12,47 +21,45 @@
   }
 
   function replaceHost(url, host) {
-    if (typeof url !== 'string') return url;
-    return url.replace(/^(https?:)\/\/[^/]+/, '$1//' + host);
+    if (typeof url !== 'string' || !MEDIA_RE.test(url)) return url;
+    var m = url.match(/^(https?:)?\/\/([^/]+)/);
+    if (!m || IGNORE_HOST_RE.test(m[2])) return url;
+    return url.replace(/^((?:https?:)?\/\/)[^/]+/, '$1' + host);
   }
 
-  // 滤掉 PCDN 等非直连形态，其余换成目标 host
-  function fixBackup(list, host) {
-    if (!Array.isArray(list)) return list;
-    return list
-      .filter(function (u) { return /:\/\/[^/]*bilivideo\.(com|cn)\//.test(u); })
-      .map(function (u) { return replaceHost(u, host); });
-  }
-
-  function fixStreams(arr, host) {
-    if (!Array.isArray(arr)) return;
-    arr.forEach(function (item) {
-      if (!item) return;
-      if (item.baseUrl) item.baseUrl = replaceHost(item.baseUrl, host);
-      if (item.base_url) item.base_url = replaceHost(item.base_url, host);
-      item.backupUrl = fixBackup(item.backupUrl, host);
-      item.backup_url = fixBackup(item.backup_url, host);
-    });
+  // 递归改写响应里所有媒体主地址（兼容 UGC 的 data.dash 与 PGC 的 result.video_info.dash 等不同结构）。
+  // backup_url / backupUrl 保留原值，并把原主地址塞进备用列表首位——
+  // 点播是分发存储，选中节点未必有该文件（404），有回退才不至于卡死。
+  function rewriteDeep(node, host) {
+    if (Array.isArray(node)) {
+      for (var i = 0; i < node.length; i++) {
+        if (typeof node[i] === 'string') node[i] = replaceHost(node[i], host);
+        else rewriteDeep(node[i], host);
+      }
+      return;
+    }
+    if (!node || typeof node !== 'object') return;
+    for (var k in node) {
+      if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
+      if (k === 'backup_url' || k === 'backupUrl') continue; // 保留备用地址作回退
+      var v = node[k];
+      if (typeof v === 'string') {
+        var t = replaceHost(v, host);
+        if (t === v) continue;
+        node[k] = t;
+        var bk = k === 'baseUrl' ? 'backupUrl' : (k === 'base_url' || k === 'url') ? 'backup_url' : null;
+        if (bk) node[bk] = Array.isArray(node[bk]) ? [v].concat(node[bk]) : [v];
+      } else {
+        rewriteDeep(v, host);
+      }
+    }
   }
 
   function rewrite(json) {
     var host = targetHost();
-    if (!host) return json;
-    var data = json && json.data;
-    if (!data) return json;
-
-    if (data.dash) {
-      fixStreams(data.dash.video, host);
-      fixStreams(data.dash.audio, host);
-      if (data.dash.dolby && data.dash.dolby.audio) fixStreams(data.dash.dolby.audio, host);
-      if (data.dash.flac && data.dash.flac.audio) fixStreams([data.dash.flac.audio], host);
-    }
-    if (Array.isArray(data.durl)) {
-      data.durl.forEach(function (d) {
-        if (d.url) d.url = replaceHost(d.url, host);
-        d.backup_url = fixBackup(d.backup_url, host);
-      });
-    }
+    if (!host || !json || typeof json !== 'object') return json;
+    if (json.code !== undefined && json.code !== 0) return json; // 跳过错误响应
+    rewriteDeep(json, host);
     return json;
   }
 
@@ -62,7 +69,7 @@
   }
 
   function isPlayurl(url) {
-    return typeof url === 'string' && url.indexOf(PLAYURL_API) >= 0 && !!targetHost();
+    return typeof url === 'string' && !!targetHost() && PLAYURL_PATHS.some(function (p) { return url.indexOf(p) >= 0; });
   }
 
   var textDesc = Object.getOwnPropertyDescriptor(XMLHttpRequest.prototype, 'responseText');
