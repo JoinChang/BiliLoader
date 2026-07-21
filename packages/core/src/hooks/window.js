@@ -14,9 +14,12 @@ function patchAutoUpdate() {
   try {
     const us = biliApp.updateService;
     const origCheck = us.checkForUpdate.bind(us);
-    us.checkForUpdate = function (force) {
-      if (force) return origCheck(force);
-      this.eventsService.emitUpdateInfo({ isAvailable: false });
+    us.checkForUpdate = function (autocheck) {
+      if (autocheck) {
+        this.eventsService.emitUpdateInfo({ isAvailable: false });
+        return;
+      }
+      return origCheck(autocheck);
     };
 
     const searchPaths = [
