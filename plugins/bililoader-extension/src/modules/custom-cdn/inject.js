@@ -15,10 +15,11 @@
   var MEDIA_RE = /(?:bilivideo|acgvideo)\.(?:com|cn)|edge\.mountaintoys\.cn|akamaized\.net/;
   var IGNORE_HOST_RE = /^(?:bvc|data|pbp|api)/;
 
-  function targetHost() {
-    var c = (window.__bililoader_pluginConfig__ && window.__bililoader_pluginConfig__[PLUGIN_ID]) || {};
-    return c['custom-cdn-video'] || '';
+  function cfg() {
+    return (window.__bililoader_pluginConfig__ && window.__bililoader_pluginConfig__[PLUGIN_ID]) || {};
   }
+  function targetHost() { return cfg()['custom-cdn-video'] || ''; }
+  function forceReplace() { return !!cfg()['custom-cdn-video-force']; }
 
   function replaceHost(url, host) {
     if (typeof url !== 'string' || !MEDIA_RE.test(url)) return url;
@@ -30,27 +31,28 @@
   // 递归改写响应里所有媒体主地址（兼容 UGC 的 data.dash 与 PGC 的 result.video_info.dash 等不同结构）。
   // backup_url / backupUrl 保留原值，并把原主地址塞进备用列表首位——
   // 点播是分发存储，选中节点未必有该文件（404），有回退才不至于卡死。
-  function rewriteDeep(node, host) {
+  function rewriteDeep(node, host, force) {
     if (Array.isArray(node)) {
       for (var i = 0; i < node.length; i++) {
         if (typeof node[i] === 'string') node[i] = replaceHost(node[i], host);
-        else rewriteDeep(node[i], host);
+        else rewriteDeep(node[i], host, force);
       }
       return;
     }
     if (!node || typeof node !== 'object') return;
     for (var k in node) {
       if (!Object.prototype.hasOwnProperty.call(node, k)) continue;
-      if (k === 'backup_url' || k === 'backupUrl') continue; // 保留备用地址作回退
+      var isBackup = k === 'backup_url' || k === 'backupUrl';
+      if (isBackup && !force) continue;
       var v = node[k];
       if (typeof v === 'string') {
         var t = replaceHost(v, host);
         if (t === v) continue;
         node[k] = t;
-        var bk = k === 'baseUrl' ? 'backupUrl' : (k === 'base_url' || k === 'url') ? 'backup_url' : null;
+        var bk = force ? null : (k === 'baseUrl' ? 'backupUrl' : (k === 'base_url' || k === 'url') ? 'backup_url' : null);
         if (bk) node[bk] = Array.isArray(node[bk]) ? [v].concat(node[bk]) : [v];
       } else {
-        rewriteDeep(v, host);
+        rewriteDeep(v, host, force);
       }
     }
   }
@@ -59,7 +61,7 @@
     var host = targetHost();
     if (!host || !json || typeof json !== 'object') return json;
     if (json.code !== undefined && json.code !== 0) return json; // 跳过错误响应
-    rewriteDeep(json, host);
+    rewriteDeep(json, host, forceReplace());
     return json;
   }
 

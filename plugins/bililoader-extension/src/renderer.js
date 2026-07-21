@@ -23,6 +23,7 @@ export const configDefaults = {
   "filter-upname-regex": false,
   "custom-cdn-live": "",
   "custom-cdn-video": "",
+  "custom-cdn-video-force": false,
 };
 
 const REFRESH_ICON = '<title>刷新节点列表</title><path fill="currentColor" d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 7.75 10h-2.08A6 6 0 1 1 12 6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/>';
@@ -464,6 +465,20 @@ export const onSettingsPageLoaded = async (view) => {
         margin: { marginTop: Margin.XS },
       }),
       ...videoCdn.components,
+      new FlexRow({
+        children: [
+          new Checkbox({
+            label: "强制视频线路",
+            defaultValue: config.get("custom-cdn-video-force"),
+            onChange: (value) => config.set("custom-cdn-video-force", value),
+          }),
+          new Tooltip({
+            text: "默认在选中节点没有该视频时会自动回退到其它节点。开启后强制只用选中线路，若该节点没有此视频将无法播放。",
+            placement: "right",
+          }),
+        ],
+        margin: { marginTop: Margin.MD },
+      }),
     ]
   });
 
