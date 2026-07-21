@@ -89,7 +89,15 @@ ipcMain.handle("BiliLoader.BiliLoader.api", async (event, method, args) => {
     }
   }
   try {
-    return await Promise.resolve(BiliLoader.api[method](...args));
+    const result = await Promise.resolve(BiliLoader.api[method](...args));
+    // 配置写入后广播到所有窗口
+    if (method === "writeConfig" && result) {
+      const [pluginId, config] = args;
+      for (const wc of electron.webContents.getAllWebContents()) {
+        wc.send("BiliLoader.configChanged", pluginId ?? "", config);
+      }
+    }
+    return result;
   } catch (error) {
     log.error(`[BiliLoader] API 执行失败: ${method}`, error);
     throw new Error(error.message || String(error));

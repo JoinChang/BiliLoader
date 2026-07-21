@@ -38,4 +38,10 @@ const { contextBridge, ipcRenderer, webFrame } = require("electron");
   }
 
   contextBridge.exposeInMainWorld("BiliLoaderPreloadErrors", preloadErrors);
+
+  // 配置变更广播
+  ipcRenderer.on("BiliLoader.configChanged", (_event, pluginId, config) => {
+    const code = `window.__bililoader_pluginConfig__=window.__bililoader_pluginConfig__||{};window.__bililoader_pluginConfig__[${JSON.stringify(pluginId)}]=${JSON.stringify(config)};`;
+    webFrame.executeJavaScriptInIsolatedWorld(0, [{ code }]);
+  });
 })();
