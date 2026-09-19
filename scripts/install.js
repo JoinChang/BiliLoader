@@ -16,7 +16,7 @@
 const fs = require("fs");
 const path = require("path");
 const os = require("os");
-const { execSync } = require("child_process");
+const { execFileSync } = require("child_process");
 
 const BILILOADER_HOME = path.resolve(__dirname, "..");
 const CORE_DIR = path.join(BILILOADER_HOME, "packages", "core");
@@ -30,8 +30,8 @@ const DEFAULT_CONFIG = {
 function log(msg) { console.log(`  ${msg}`); }
 function step(msg) { console.log(`\n▸ ${msg}`); }
 
-function run(cmd, opts = {}) {
-  execSync(cmd, { stdio: "inherit", timeout: 120000, ...opts });
+function run(cmd, args = [], opts = {}) {
+  execFileSync(cmd, args, { stdio: "inherit", timeout: 120000, ...opts });
 }
 
 function findAppDir() {
@@ -48,8 +48,9 @@ function findAppDir() {
     ];
     for (const key of regKeys) {
       try {
-        const str = execSync(
-          `powershell -Command "(Get-ItemProperty -Path 'Registry::${key}' -ErrorAction Stop).UninstallString"`,
+        const str = execFileSync(
+          "powershell",
+          ["-Command", `(Get-ItemProperty -Path 'Registry::${key}' -ErrorAction Stop).UninstallString`],
           { encoding: "utf-8", timeout: 5000 }
         ).trim();
         if (str) {
@@ -101,14 +102,14 @@ function main() {
   // 安装核心依赖
   if (!fs.existsSync(path.join(CORE_DIR, "node_modules"))) {
     step("安装依赖");
-    run("npm install --production", { cwd: CORE_DIR });
+    run("npm", ["install", "--production"], { cwd: CORE_DIR });
   }
 
   // 从原始 asar 解包
   step("解包 app.asar");
   const source = fs.existsSync(asarBackup) ? asarBackup : asarPath;
   if (source === asarBackup) log("使用已备份的原始 app.asar");
-  run(`npx asar extract "${source}" "${appDir}"`);
+  run("npx", ["asar", "extract", source, appDir]);
 
   // 注入 bootstrap loader
   step("注入 Bootstrap loader");
@@ -136,7 +137,7 @@ function main() {
     fs.copyFileSync(asarPath, asarBackup);
     log("已备份原始 app.asar");
   }
-  run(`npx asar pack "${appDir}" "${asarPath}" --unpack "*.node"`);
+  run("npx", ["asar", "pack", appDir, asarPath, "--unpack", "*.node"]);
 
   // 创建数据目录和默认配置
   step("初始化数据目录");
